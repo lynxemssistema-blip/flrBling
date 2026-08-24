@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+.env.local
+.git
+.agents
+HOSTINGER_PRONTO
+bling-clientes-flr
+bling-clientes-flr.zip

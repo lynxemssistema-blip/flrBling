@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bling ERP | FLR Instalações & Clientes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ==========================================================================
+       1. LANDING PAGE (PÁGINA INICIAL DE APRESENTAÇÃO)
+       ========================================================================== -->
+  <div class="landing-page" id="landingPageView">
+    <!-- Landing Header -->
+    <header class="landing-nav">
+      <div class="landing-nav-container">
+        <div class="brand-container">
+          <div class="brand-logo">
+            <span class="bling-text">bling</span><span class="bling-dot">!</span>
+          </div>
+          <span class="landing-company-tag">FLR Instalações</span>
+        </div>
+
+        <div class="landing-nav-links">
+          <a href="#features">Funcionalidades</a>
+          <a href="#security">Segurança & Acesso</a>
+          <a href="#about">Sobre a Integração</a>
+        </div>
+
+        <div class="landing-nav-actions">
+          <button class="btn btn-secondary" id="btnLandingLogin">
+            <i class="fa-solid fa-right-to-bracket"></i> Entrar
+          </button>
+          <button class="btn btn-bling-primary" id="btnLandingRegister">
+            <i class="fa-solid fa-user-plus"></i> Solicitar Acesso
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="landing-hero">
+      <div class="hero-container">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <i class="fa-solid fa-shield-halved"></i> Portal Corporativo com Supabase & Bling v3
+          </div>
+          <h1 class="hero-title">
+            Visualizador de Clientes & Gestão Integrada <span class="text-gradient">FLR Bling</span>
+          </h1>
+          <p class="hero-subtitle">
+            Acesse em tempo real todas as informações de clientes, dados fiscais e endereços direto do Bling ERP, enriquecido com complementos técnicos e controle rigoroso de usuários com aprovação do Super Administrador.
+          </p>
+
+          <div class="hero-buttons">
+            <button class="btn btn-bling-primary btn-lg" id="btnHeroEnter">
+              <i class="fa-solid fa-door-open"></i> Acessar o Portal
+            </button>
+            <button class="btn btn-secondary btn-lg" id="btnHeroDemo">
+              <i class="fa-solid fa-flask"></i> Ver Demonstração
+            </button>
+          </div>
+
+          <div class="hero-stats-strip">
+            <div class="hero-stat-item">
+              <strong>100%</strong>
+              <span>Conexão API v3</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat-item">
+              <strong>Seguro</strong>
+              <span>Aprovação por Superadmin</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat-item">
+              <strong>Nuvem</strong>
+              <span>Banco de Dados Supabase</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="app-preview-card">
+            <div class="preview-header">
+              <div class="preview-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="preview-title">bling.flr.lynxems.com.br</div>
+            </div>
+            <div class="preview-body">
+              <div class="mock-table-row">
+                <div class="mock-avatar">FL</div>
+                <div class="mock-text">
+                  <div class="mock-line-title">FLR Instalações e Manutenções LTDA</div>
+                  <div class="mock-line-sub">45.123.890/0001-92 • São Paulo/SP</div>
+                </div>
+                <span class="mock-badge active">● Ativo</span>
+              </div>
+              <div class="mock-table-row">
+                <div class="mock-avatar pf">CE</div>
+                <div class="mock-text">
+                  <div class="mock-line-title">Carlos Eduardo Silveira</div>
+                  <div class="mock-line-sub">289.456.781-04 • Campinas/SP</div>
+                </div>
+                <span class="mock-badge active">● Ativo</span>
+              </div>
+              <div class="mock-table-row">
+                <div class="mock-avatar">CH</div>
+                <div class="mock-text">
+                  <div class="mock-line-title">Construtora Horizonte S.A.</div>
+                  <div class="mock-line-sub">10.987.654/0001-33 • Rio de Janeiro/RJ</div>
+                </div>
+                <span class="mock-badge active">● Ativo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="landing-features" id="features">
+      <div class="section-container">
+        <div class="section-heading">
+          <h2>Recursos Desenvolvidos para a FLR</h2>
+          <p>Tudo o que sua equipe técnica e comercial precisa em uma única plataforma.</p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon icon-blue">
+              <i class="fa-solid fa-users-viewfinder"></i>
+            </div>
+            <h3>Consulta Rápida de Clientes</h3>
+            <p>Busca instantânea por Razão Social, Fantasia, CPF/CNPJ, e-mail e cidade, com layout oficial do Bling ERP.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon icon-green">
+              <i class="fa-solid fa-database"></i>
+            </div>
+            <h3>Complementos no Supabase</h3>
+            <p>Adicione notas internas, tags operacionais (ex: VIP, Em Obras, Preventiva) e defina técnicos responsáveis.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon icon-purple">
+              <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <h3>Aprovação por Superadmin</h3>
+            <p>Novos usuários só acessam os dados após aprovação expressa do Super Administrador do sistema.</p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon icon-orange">
+              <i class="fa-solid fa-key"></i>
+            </div>
+            <h3>OAuth 2.0 Centralizado</h3>
+            <p>A autenticação com o Bling é gerenciada exclusivamente pelo Superadmin e persistida com segurança no banco.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      <div class="footer-container">
+        <p>© 2026 FLR Instalações & Manutenções. Integrado à API v3 do Bling ERP via Supabase.</p>
+      </div>
+    </footer>
+  </div>
+
+
+  <!-- ==========================================================================
+       2. DASHBOARD PRINCIPAL (SISTEMA ERP LOGADO)
+       ========================================================================== -->
+  <div class="app-layout" id="dashboardView" style="display: none;">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle" title="Recolher Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="brand-container">
+          <div class="brand-logo">
+            <span class="bling-text">bling</span><span class="bling-dot">!</span>
+          </div>
+          <span class="erp-badge">FLR Portal</span>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="global-search-wrapper">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="quickSearchInput" placeholder="Buscar cliente por nome, CPF/CNPJ, código ou e-mail...">
+          <span class="search-shortcut">Ctrl + K</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Status de Conexão com Bling -->
+        <div class="api-status-badge" id="apiStatusBadge">
+          <span class="status-indicator-dot"></span>
+          <span class="status-text" id="apiStatusText">Verificando...</span>
+        </div>
+
+        <!-- Botão Conexão Bling (Visível Apenas para Superadmin) -->
+        <button class="btn-header-action" id="btnOpenAuthModal" title="Configurações de Conexão OAuth 2.0 (Exclusivo Superadmin)">
+          <i class="fa-solid fa-key"></i>
+          <span>Conexão Bling</span>
+        </button>
+
+        <!-- Perfil do Usuário Logado -->
+        <div class="header-user-profile">
+          <div class="avatar-circle" id="userHeaderAvatar">AD</div>
+          <div class="user-meta">
+            <span class="user-company" id="userHeaderName">Administrador</span>
+            <span class="user-role-badge" id="userHeaderRole">Superadmin</span>
+          </div>
+          <button class="btn-logout" id="btnAppLogout" title="Sair do Sistema">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+          <div class="nav-section-title">MÓDULOS</div>
+          
+          <a href="javascript:void(0)" class="nav-item active" id="navClients">
+            <i class="fa-solid fa-users"></i>
+            <span>Clientes & Contatos</span>
+            <span class="nav-badge" id="navClientsCount">0</span>
+          </a>
+
+          <!-- Painel Exclusivo de Gestão de Usuários (Superadmin) -->
+          <div id="superadminNavSection">
+            <div class="nav-section-title">ADMINISTRAÇÃO</div>
+            <a href="javascript:void(0)" class="nav-item" id="navOpenUsersManager">
+              <i class="fa-solid fa-users-gear text-purple"></i>
+              <span>Gestão de Usuários</span>
+              <span class="nav-badge badge-pending" id="navPendingUsersCount" style="display: none;">0</span>
+            </a>
+          </div>
+
+          <div class="nav-section-title">CONFIGURAÇÕES</div>
+
+          <a href="javascript:void(0)" class="nav-item" id="navOpenSettings">
+            <i class="fa-solid fa-key"></i>
+            <span>Conexão Bling OAuth</span>
+          </a>
+
+          <a href="https://developer.bling.com.br/referencia" target="_blank" class="nav-item">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            <span>Docs Bling API v3</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-info-card">
+            <div class="info-card-header">
+              <i class="fa-solid fa-database"></i>
+              <span>Banco Supabase</span>
+            </div>
+            <p>Tabelas: <code>flrBling_*</code></p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content View -->
+      <main class="main-content">
+        <!-- Breadcrumb & Top Bar -->
+        <div class="content-header">
+          <div class="breadcrumb-container">
+            <span class="bc-item">Início</span>
+            <i class="fa-solid fa-chevron-right bc-separator"></i>
+            <span class="bc-item">Cadastros</span>
+            <i class="fa-solid fa-chevron-right bc-separator"></i>
+            <span class="bc-item active">Clientes e Fornecedores</span>
+          </div>
+
+          <div class="header-actions">
+            <!-- Alternador de Fonte de Dados -->
+            <div class="data-source-toggle" title="Alternar entre dados reais da API e dados simulados">
+              <span class="toggle-label">Fonte:</span>
+              <button class="source-btn active" id="btnSourceLive">
+                <i class="fa-solid fa-bolt"></i> API Bling
+              </button>
+              <button class="source-btn" id="btnSourceDemo">
+                <i class="fa-solid fa-flask"></i> Modo Demo
+              </button>
+            </div>
+
+            <button class="btn btn-secondary" id="btnRefreshData" title="Recarregar Lista">
+              <i class="fa-solid fa-arrows-rotate"></i>
+              <span>Atualizar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard KPI Stats Bar -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon icon-blue">
+              <i class="fa-solid fa-user-group"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total de Clientes</span>
+              <span class="stat-value" id="statTotalCount">0</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-green">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Cadastros Ativos</span>
+              <span class="stat-value" id="statActiveCount">0</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-purple">
+              <i class="fa-solid fa-building"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Pessoa Jurídica (PJ)</span>
+              <span class="stat-value" id="statPjCount">0</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon icon-orange">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Pessoa Física (PF)</span>
+              <span class="stat-value" id="statPfCount">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Control Panel -->
+        <div class="filters-card">
+          <div class="filter-group filter-search">
+            <label for="filterSearch">Filtrar por Termo</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="filterSearch" placeholder="Nome, Razão Social, CPF/CNPJ...">
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label for="filterType">Tipo de Pessoa</label>
+            <select id="filterType">
+              <option value="">Todos os Tipos</option>
+              <option value="J">Pessoa Jurídica (PJ)</option>
+              <option value="F">Pessoa Física (PF)</option>
+              <option value="E">Estrangeiro</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="filterSituation">Situação</label>
+            <select id="filterSituation">
+              <option value="">Todas as Situações</option>
+              <option value="A">Ativos</option>
+              <option value="I">Inativos</option>
+              <option value="S">Sem Movimentação</option>
+            </select>
+          </div>
+
+          <div class="filter-actions">
+            <button class="btn btn-secondary btn-icon" id="btnClearFilters" title="Limpar Filtros">
+              <i class="fa-solid fa-filter-circle-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Data Grid Table Section -->
+        <div class="table-container">
+          <div class="table-header-info">
+            <div class="table-title">
+              <h3>Listagem de Clientes e Contatos</h3>
+              <span class="records-badge" id="recordsBadge">0 registros</span>
+            </div>
+            <div class="table-tools">
+              <span class="last-sync-text" id="lastSyncText">Última atualização: --:--:--</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="bling-table" id="clientsTable">
+              <thead>
+                <tr>
+                  <th style="width: 70px;">Código</th>
+                  <th>Nome / Razão Social</th>
+                  <th>Tipo</th>
+                  <th>CPF / CNPJ</th>
+                  <th>E-mail</th>
+                  <th>Telefone / Celular</th>
+                  <th>Cidade / UF</th>
+                  <th style="text-align: center;">Situação</th>
+                  <th style="text-align: right; width: 110px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="clientsTableBody">
+                <!-- Linhas inseridas dinamicamente via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Loading State -->
+          <div class="table-loading-state" id="tableLoadingState">
+            <div class="spinner"></div>
+            <p>Consultando dados da API do Bling...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div class="table-empty-state" id="tableEmptyState" style="display: none;">
+            <div class="empty-icon">
+              <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <h4>Nenhum cliente encontrado</h4>
+            <p id="emptyStateMessage">Verifique os filtros ou verifique a conexão com a API do Bling.</p>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="table-pagination" id="tablePagination">
+            <div class="pagination-info" id="paginationInfo">
+              Mostrando 1 a 10 de 0 registros
+            </div>
+            <div class="pagination-controls">
+              <button class="page-btn" id="btnPrevPage" disabled>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <span class="page-current" id="currentPageNumber">Página 1</span>
+              <button class="page-btn" id="btnNextPage" disabled>
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+
+  <!-- ==========================================================================
+       3. MODAIS DE AUTENTICAÇÃO DO USUÁRIO (LOGIN & CADASTRO)
+       ========================================================================== -->
+  <!-- Modal de Login -->
+  <div class="modal-backdrop" id="loginModal">
+    <div class="modal-box modal-auth-box">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-lock text-blue"></i>
+          <h3>Entrar no Sistema FLR</h3>
+        </div>
+        <button class="modal-close" id="btnCloseLoginModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">E-mail Corporativo</label>
+            <input type="email" id="loginEmail" class="form-control" placeholder="seu.email@flrinstalacoes.com.br" required>
+          </div>
+          <div class="form-group mt-3">
+            <label for="loginPassword">Senha de Acesso</label>
+            <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg mt-3" id="btnLoginSubmit">
+            <i class="fa-solid fa-right-to-bracket"></i> Acessar Sistema
+          </button>
+        </form>
+
+        <div class="auth-box-footer mt-3">
+          <p>Superadmin padrão: <code>admin@flrinstalacoes.com.br</code> / <code>AdminFLR@2026</code></p>
+          <a href="javascript:void(0)" id="linkOpenRegister">Não tem acesso? Solicite seu cadastro</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Cadastro -->
+  <div class="modal-backdrop" id="registerModal">
+    <div class="modal-box modal-auth-box">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-user-plus text-emerald"></i>
+          <h3>Solicitar Cadastro de Usuário</h3>
+        </div>
+        <button class="modal-close" id="btnCloseRegisterModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="registerForm">
+          <div class="form-group">
+            <label for="regName">Nome Completo</label>
+            <input type="text" id="regName" class="form-control" placeholder="Ex: Roberto Silva" required>
+          </div>
+          <div class="form-group mt-2">
+            <label for="regEmail">E-mail</label>
+            <input type="email" id="regEmail" class="form-control" placeholder="roberto@flrinstalacoes.com.br" required>
+          </div>
+          <div class="form-group mt-2">
+            <label for="regPhone">Telefone / WhatsApp</label>
+            <input type="text" id="regPhone" class="form-control" placeholder="(11) 98765-4321">
+          </div>
+          <div class="form-group mt-2">
+            <label for="regPassword">Senha (Mínimo 6 caracteres)</label>
+            <input type="password" id="regPassword" class="form-control" placeholder="••••••••" required minlength="6">
+          </div>
+          
+          <div class="alert-info-box mt-3">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Após o envio, sua conta passará pela aprovação do <strong>Super Administrador</strong> antes de liberar o acesso.</span>
+          </div>
+
+          <button type="submit" class="btn btn-bling-primary btn-block btn-lg mt-3" id="btnRegisterSubmit">
+            <i class="fa-solid fa-paper-plane"></i> Enviar Solicitação
+          </button>
+        </form>
+
+        <div class="auth-box-footer mt-3">
+          <a href="javascript:void(0)" id="linkOpenLogin">Já possui cadastro? Fazer Login</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==========================================================================
+       4. MODAL DE GESTÃO DE USUÁRIOS (SUPERADMIN ONLY)
+       ========================================================================== -->
+  <div class="modal-backdrop" id="usersManagerModal">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-users-gear text-purple"></i>
+          <h3>Gestão de Usuários & Aprovações (Superadmin)</h3>
+        </div>
+        <button class="modal-close" id="btnCloseUsersModal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="bling-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Telefone</th>
+                <th>Perfil</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: right;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCloseUsersModalFooter">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ==========================================================================
+       5. DRAWER LATERAL: DETALHES DO CLIENTE
+       ========================================================================== -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="client-drawer" id="clientDrawer">
+    <div class="drawer-header">
+      <div class="drawer-title-box">
+        <div class="drawer-avatar" id="drawerAvatar">FL</div>
+        <div class="drawer-heading">
+          <h2 id="drawerClientName">Carregando...</h2>
+          <div class="drawer-subheading">
+            <span class="drawer-code" id="drawerClientCode">CLI-000</span>
+            <span class="drawer-badge" id="drawerStatusBadge">Ativo</span>
+          </div>
+        </div>
+      </div>
+      <button class="btn-close-drawer" id="btnCloseDrawer" title="Fechar (Esc)">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Navegação de Abas do Cliente -->
+    <div class="drawer-tabs">
+      <button class="drawer-tab active" data-tab="tab-geral">
+        <i class="fa-solid fa-id-card"></i> Dados Gerais
+      </button>
+      <button class="drawer-tab" data-tab="tab-endereco">
+        <i class="fa-solid fa-location-dot"></i> Endereços
+      </button>
+      <button class="drawer-tab" data-tab="tab-contato">
+        <i class="fa-solid fa-phone"></i> Contatos
+      </button>
+      <button class="drawer-tab" data-tab="tab-financeiro">
+        <i class="fa-solid fa-coins"></i> Fiscal & Financeiro
+      </button>
+      <button class="drawer-tab" data-tab="tab-supabase">
+        <i class="fa-solid fa-database text-emerald"></i> Complementos FLR (Supabase)
+      </button>
+      <button class="drawer-tab" data-tab="tab-json">
+        <i class="fa-solid fa-code"></i> JSON Bruto
+      </button>
+    </div>
+
+    <!-- Conteúdo das Abas -->
+    <div class="drawer-body">
+      <!-- Aba: Dados Gerais -->
+      <div class="tab-content active" id="tab-geral">
+        <div class="section-card">
+          <h4 class="section-title"><i class="fa-solid fa-user"></i> Identificação</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Nome / Razão Social</span>
+              <span class="detail-value" id="detNome">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Nome Fantasia</span>
+              <span class="detail-value" id="detFantasia">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Tipo de Pessoa</span>
+              <span class="detail-value" id="detTipo">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">CPF / CNPJ</span>
+              <span class="detail-value text-mono font-bold" id="detDoc">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Inscrição Estadual (IE)</span>
+              <span class="detail-value text-mono" id="detIe">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">RG</span>
+              <span class="detail-value text-mono" id="detRg">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Órgão Emissor</span>
+              <span class="detail-value" id="detOrgaoEmissor">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Data Nasc. / Fundação</span>
+              <span class="detail-value" id="detDataNasc">--</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h4 class="section-title"><i class="fa-solid fa-circle-info"></i> Controle Interno Bling</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">ID Bling</span>
+              <span class="detail-value text-mono" id="detIdBling">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Código Interno</span>
+              <span class="detail-value text-mono" id="detCodigoInterno">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Situação Cadastral</span>
+              <span class="detail-value" id="detSituacao">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Indicador de IE</span>
+              <span class="detail-value" id="detIndicadorIe">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba: Endereços -->
+      <div class="tab-content" id="tab-endereco">
+        <div class="section-card">
+          <h4 class="section-title"><i class="fa-solid fa-house"></i> Endereço Geral / Principal</h4>
+          <div class="detail-grid">
+            <div class="detail-item col-2">
+              <span class="detail-label">Logradouro</span>
+              <span class="detail-value" id="detEndRua">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Número</span>
+              <span class="detail-value" id="detEndNum">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Complemento</span>
+              <span class="detail-value" id="detEndComp">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Bairro</span>
+              <span class="detail-value" id="detEndBairro">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">CEP</span>
+              <span class="detail-value text-mono" id="detEndCep">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Município</span>
+              <span class="detail-value" id="detEndCidade">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Estado (UF)</span>
+              <span class="detail-value" id="detEndUf">--</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card" id="cardEndCobranca">
+          <h4 class="section-title"><i class="fa-solid fa-file-invoice"></i> Endereço de Cobrança</h4>
+          <div class="detail-grid">
+            <div class="detail-item col-2">
+              <span class="detail-label">Logradouro</span>
+              <span class="detail-value" id="detCobRua">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Número</span>
+              <span class="detail-value" id="detCobNum">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Bairro</span>
+              <span class="detail-value" id="detCobBairro">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">CEP</span>
+              <span class="detail-value text-mono" id="detCobCep">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Município / UF</span>
+              <span class="detail-value" id="detCobCidade">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba: Contatos -->
+      <div class="tab-content" id="tab-contato">
+        <div class="section-card">
+          <h4 class="section-title"><i class="fa-solid fa-address-book"></i> Canais de Comunicação</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">E-mail Principal</span>
+              <span class="detail-value" id="detEmail">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">E-mail para Envio de NF-e</span>
+              <span class="detail-value" id="detEmailNfe">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Telefone Principal</span>
+              <span class="detail-value text-mono" id="detTelefone">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Celular / WhatsApp</span>
+              <span class="detail-value text-mono" id="detCelular">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba: Financeiro & Fiscal -->
+      <div class="tab-content" id="tab-financeiro">
+        <div class="section-card">
+          <h4 class="section-title"><i class="fa-solid fa-credit-card"></i> Parâmetros Financeiros</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Limite de Crédito</span>
+              <span class="detail-value text-emerald font-bold" id="detLimiteCredito">R$ 0,00</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Condição de Pagamento Padrão</span>
+              <span class="detail-value" id="detCondicaoPagto">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Categoria do Contato</span>
+              <span class="detail-value" id="detCategoria">--</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Vendedor Responsável</span>
+              <span class="detail-value" id="detVendedor">--</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h4 class="section-title"><i class="fa-solid fa-message"></i> Observações</h4>
+          <p class="notes-text" id="detObservacoes">Nenhuma observação cadastrada para este cliente.</p>
+        </div>
+      </div>
+
+      <!-- Aba: Complementos FLR (Supabase) -->
+      <div class="tab-content" id="tab-supabase">
+        <div class="section-card">
+          <div class="section-card-header-flex">
+            <h4 class="section-title mb-0"><i class="fa-solid fa-database text-emerald"></i> Informações Adicionais FLR</h4>
+            <span class="supabase-badge"><i class="fa-solid fa-cloud"></i> Tabela flrBling_</span>
+          </div>
+
+          <div class="form-grid-2 mt-3">
+            <div class="form-group">
+              <label for="sbInternalStatus">Status Operacional Interno</label>
+              <select id="sbInternalStatus" class="form-control">
+                <option value="ativo">Ativo / Regular</option>
+                <option value="em_obras">Em Obras / Instalação</option>
+                <option value="em_manutencao">Em Manutenção Preventiva</option>
+                <option value="vip">Cliente VIP / Estratégico</option>
+                <option value="bloqueado">Bloqueado / Pendência</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="sbPriority">Prioridade de Atendimento</label>
+              <select id="sbPriority" class="form-control">
+                <option value="baixa">Baixa</option>
+                <option value="normal" selected>Normal</option>
+                <option value="alta">Alta</option>
+                <option value="urgente">Urgente</option>
+              </select>
+            </div>
+
+            <div class="form-group col-2">
+              <label for="sbResponsibleManager">Gestor / Técnico Responsável (FLR)</label>
+              <input type="text" id="sbResponsibleManager" class="form-control" placeholder="Ex: Eng. Rodrigo / Equipe Alpha">
+            </div>
+
+            <div class="form-group col-2">
+              <label for="sbTagsInput">Tags Internas (pressione Enter)</label>
+              <div class="tags-container" id="sbTagsContainer">
+                <!-- Tags dinâmicas -->
+              </div>
+              <input type="text" id="sbTagsInput" class="form-control mt-2" placeholder="Digite uma tag e tecle Enter">
+            </div>
+
+            <div class="form-group col-2">
+              <label for="sbInternalNotes">Notas Internas & Histórico FLR</label>
+              <textarea id="sbInternalNotes" class="form-control" rows="4" placeholder="Adicione observações internas sobre este cliente..."></textarea>
+            </div>
+          </div>
+
+          <div class="supabase-actions-bar mt-3">
+            <button class="btn btn-bling-primary" id="btnSaveComplement">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar no Supabase
+            </button>
+            <span class="last-saved-meta" id="sbLastSavedMeta">Carregando dados...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba: JSON Bruto -->
+      <div class="tab-content" id="tab-json">
+        <div class="json-viewer-header">
+          <span>Payload original retornado pela API v3 do Bling</span>
+          <button class="btn btn-secondary btn-sm" id="btnCopyJson">
+            <i class="fa-solid fa-copy"></i> Copiar JSON
+          </button>
+        </div>
+        <pre class="json-code" id="detRawJson">{}</pre>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" id="btnDrawerCloseFooter">Fechar</button>
+      <a href="https://www.bling.com.br" target="_blank" class="btn btn-primary" id="btnOpenInBling">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir no Bling
+      </a>
+    </div>
+  </aside>
+
+
+  <!-- ==========================================================================
+       6. MODAL DE AUTENTICAÇÃO DO BLING (EXCLUSIVO SUPERADMIN)
+       ========================================================================== -->
+  <div class="modal-backdrop" id="authModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-shield-halved text-blue"></i>
+          <h3>Conexão Centralizada com Bling API v3</h3>
+        </div>
+        <button class="modal-close" id="btnCloseAuthModal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="auth-flow-card">
+          <h4><i class="fa-solid fa-1"></i> Passo 1: Autorizar Aplicativo no Bling</h4>
+          <p>Clique no botão abaixo para abrir a página oficial de consentimento do Bling:</p>
+          <a href="#" target="_blank" class="btn btn-bling-primary" id="btnAuthorizeLink">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Autorizar Aplicativo no Bling
+          </a>
+        </div>
+
+        <div class="auth-flow-card">
+          <h4><i class="fa-solid fa-2"></i> Passo 2: Inserir o Código de Autorização</h4>
+          <p>Após autorizar, você será redirecionado para <code>https://flr.lynxems.com.br/</code> com o parâmetro <code>?code=...</code>. Cole a URL completa ou apenas o código abaixo:</p>
+          
+          <div class="form-group">
+            <label for="inputAuthCode">Código (code) ou URL de Retorno:</label>
+            <input type="text" id="inputAuthCode" class="form-control text-mono" placeholder="Ex: e6175e11d0dfa0907149a4663806a6c4b2605f63 ou Cole a URL inteira">
+          </div>
+
+          <button class="btn btn-primary btn-block" id="btnExchangeCode">
+            <i class="fa-solid fa-key"></i> Autenticar e Salvar no Supabase
+          </button>
+        </div>
+
+        <details class="advanced-token-details">
+          <summary>Inserir Access Token manualmente (Opcional)</summary>
+          <div class="form-group mt-3">
+            <label for="inputManualToken">Access Token (Bearer):</label>
+            <textarea id="inputManualToken" class="form-control text-mono" rows="2" placeholder="Cole o access_token aqui..."></textarea>
+          </div>
+          <button class="btn btn-secondary btn-sm mt-2" id="btnSaveManualToken">Salvar Token Manual</button>
+        </details>
+
+        <div class="current-token-status" id="currentTokenStatusBox">
+          <span class="label">Status Central:</span>
+          <span class="value" id="modalTokenStatusText">Não conectado</span>
+          <button class="btn btn-danger btn-xs" id="btnLogoutToken" style="display: none;">Desconectar</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCloseAuthModalFooter">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
