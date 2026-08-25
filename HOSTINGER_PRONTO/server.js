@@ -27,17 +27,51 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'flr_bling_super_jwt_secret_2026';
-const TOKENS_FILE = path.join(__dirname, 'tokens.json');
-
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ limit: '25mb', extended: true }));
+
+const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
 
 // Servir arquivos estáticos da pasta public com múltiplos fallbacks
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
 app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
+
+// Endpoint: Upload Direto de Imagem (Base64 -> Arquivo)
+app.post('/api/upload/image', authenticateToken, (req, res) => {
+  try {
+    const { imageBase64 } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ error: 'Nenhuma imagem fornecida.' });
+    }
+
+    const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    let ext = 'jpg';
+    let data = imageBase64;
+    if (matches && matches.length === 3) {
+      const mime = matches[1];
+      ext = mime.split('/')[1] || 'jpg';
+      if (ext === 'jpeg') ext = 'jpg';
+      data = matches[2];
+    }
+
+    const safeName = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+    const filePath = path.join(UPLOADS_DIR, safeName);
+    fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
+
+    const publicUrl = `/uploads/${safeName}`;
+    res.json({ success: true, url: publicUrl });
+  } catch (err) {
+    console.error('Erro no upload de imagem:', err);
+    res.status(500).json({ error: 'Erro ao salvar imagem: ' + err.message });
+  }
+});
 
 // Inicializa o Superadmin no banco
 ensureSuperadmin();
@@ -760,6 +794,55 @@ app.get('/api/produtos/:id', authenticateToken, async (req, res) => {
       error: 'Erro ao buscar detalhes do produto',
       details: err.response?.data || err.message
     });
+  }
+});
+
+// Atualizar Imagem de Produto Existente
+app.patch('/api/produtos/:id/imagem', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { imagemURL } = req.body;
+
+    if (!imagemURL) {
+      return res.status(400).json({ error: 'imagemURL é obrigatório.' });
+    }
+
+    // Atualiza no cache em memória
+    const demoProd = DEMO_DATA.produtos.find(p => String(p.id) === String(id));
+    if (demoProd) {
+      demoProd.imagemURL = imagemURL.trim();
+    }
+
+    // Se houver conexão com o Bling, tenta persistir via Bling API v3
+    let accessToken = await getValidAccessToken();
+    if (accessToken) {
+      try {
+        await axios.patch(`https://bling.com.br/Api/v3/produtos/${id}`, {
+          midia: {
+            imagens: {
+              externas: [{ link: imagemURL.trim() }]
+            }
+          }
+        }, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (apiErr) {
+        console.warn('Aviso API Bling ao atualizar imagem:', apiErr.response?.data || apiErr.message);
+      }
+    }
+
+    await logActivity('product_image_update', null, `Imagem do produto ${id} atualizada para: ${imagemURL}`, { id, imagemURL }, req.user.id);
+
+    res.json({
+      success: true,
+      message: 'Imagem do produto atualizada com sucesso!',
+      imagemURL
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao atualizar imagem do produto: ' + err.message });
   }
 });
 

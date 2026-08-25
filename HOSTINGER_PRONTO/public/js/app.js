@@ -1115,6 +1115,7 @@ function setupEventListeners() {
   });
 
   setupSupabaseTagsInput();
+  setupImageUploadHandlers();
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -1551,6 +1552,167 @@ async function handleCreateProduct(e) {
   } finally {
     btnSubmit.disabled = false;
     btnSubmit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar no Bling & Supabase';
+  }
+}
+
+// ==========================================================================
+// UPLOAD DE IMAGENS (DRAG & DROP + ALTERAR FOTO EXISTENTE)
+// ==========================================================================
+function setupImageUploadHandlers() {
+  const dropZone = document.getElementById('prodDropZone');
+  const fileInput = document.getElementById('prodImageFileInput');
+  const zoneContent = document.getElementById('uploadZoneContent');
+  const previewBox = document.getElementById('uploadPreviewBox');
+  const previewImg = document.getElementById('uploadPreviewImg');
+  const btnRemove = document.getElementById('btnRemovePreview');
+  const urlInput = document.getElementById('prodImagemURL');
+
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', (e) => {
+      if (e.target !== btnRemove && !btnRemove?.contains(e.target)) {
+        fileInput.click();
+      }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processUploadedImage(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processUploadedImage(e.target.files[0]);
+      }
+    });
+
+    btnRemove?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.value = '';
+      if (previewImg) previewImg.src = '';
+      if (previewBox) previewBox.style.display = 'none';
+      if (zoneContent) zoneContent.style.display = 'flex';
+      if (urlInput) urlInput.value = '';
+    });
+  }
+
+  async function processUploadedImage(file) {
+    if (!file.type.startsWith('image/')) {
+      showNotification('Por favor, selecione um arquivo de imagem válido (JPG, PNG, WebP).', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64Data = event.target.result;
+      if (previewImg) previewImg.src = base64Data;
+      if (previewBox) previewBox.style.display = 'inline-block';
+      if (zoneContent) zoneContent.style.display = 'none';
+
+      // Envia para o backend salvar
+      try {
+        showNotification('Enviando imagem do produto...', 'info');
+        const res = await fetch('/api/upload/image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.authToken}`
+          },
+          body: JSON.stringify({ imageBase64: base64Data, fileName: file.name })
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (urlInput && json.url) {
+            urlInput.value = window.location.origin + json.url;
+            showNotification('Imagem carregada com sucesso!', 'success');
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao salvar upload no servidor:', err);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Alterar foto diretamente no Drawer de Detalhes
+  const btnDrawerPhoto = document.getElementById('btnDrawerChangePhoto');
+  const drawerFileInput = document.getElementById('drawerPhotoFileInput');
+  const drawerImg = document.getElementById('drawerProductImg');
+  const drawerHero = document.getElementById('drawerProductHero');
+
+  if (btnDrawerPhoto && drawerFileInput) {
+    btnDrawerPhoto.addEventListener('click', () => {
+      drawerFileInput.click();
+    });
+
+    drawerFileInput.addEventListener('change', async (e) => {
+      if (!e.target.files || !e.target.files[0] || !state.selectedItem) return;
+      const file = e.target.files[0];
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Data = event.target.result;
+        btnDrawerPhoto.disabled = true;
+        btnDrawerPhoto.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando foto...';
+
+        try {
+          // 1. Faz upload do arquivo
+          const uploadRes = await fetch('/api/upload/image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${state.authToken}`
+            },
+            body: JSON.stringify({ imageBase64: base64Data, fileName: file.name })
+          });
+
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok) throw new Error(uploadData.error || 'Erro ao enviar foto');
+
+          const finalImgUrl = window.location.origin + uploadData.url;
+
+          // 2. Atualiza o produto com a nova imagem
+          const patchRes = await fetch(`/api/produtos/${state.selectedItem.id}/imagem`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${state.authToken}`
+            },
+            body: JSON.stringify({ imagemURL: finalImgUrl })
+          });
+
+          if (!patchRes.ok) throw new Error('Falha ao atualizar foto no produto');
+
+          // 3. Atualiza estado local e tela
+          state.selectedItem.imagemURL = finalImgUrl;
+          if (drawerImg) drawerImg.src = finalImgUrl;
+          if (drawerHero) drawerHero.style.display = 'flex';
+
+          const prodInList = state.allData.find(p => p.id === state.selectedItem.id);
+          if (prodInList) prodInList.imagemURL = finalImgUrl;
+
+          renderGenericTable();
+          showNotification('Foto do produto atualizada com sucesso no Bling!', 'success');
+        } catch (err) {
+          showNotification(err.message, 'error');
+        } finally {
+          btnDrawerPhoto.disabled = false;
+          btnDrawerPhoto.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Alterar Imagem';
+          drawerFileInput.value = '';
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   }
 }
 
