@@ -44,7 +44,7 @@ const MODULE_CONFIG = {
     category: 'Cadastros',
     endpoint: 'produtos',
     demoKey: 'produtos',
-    columns: ['Código', 'Descrição do Produto', 'Categoria', 'Preço Venda', 'Preço Custo', 'Estoque', 'Unidade', 'Situação', 'Ações'],
+    columns: ['Foto', 'Código', 'Descrição do Produto', 'Categoria', 'Preço Venda', 'Preço Custo', 'Estoque', 'Unidade', 'Situação', 'Ações'],
     filterTypeLabel: 'Tipo',
     filterTypeOptions: [{ val: 'P', label: 'Produto' }, { val: 'S', label: 'Serviço' }],
     filterSituationOptions: [{ val: 'A', label: 'Ativos' }, { val: 'I', label: 'Inativos' }]
@@ -54,7 +54,7 @@ const MODULE_CONFIG = {
     category: 'Cadastros',
     endpoint: 'produtos?tipo=S',
     demoKey: 'produtos',
-    columns: ['Código', 'Descrição do Serviço', 'Categoria', 'Valor Base', 'Custo Estimado', 'Unidade', 'Situação', 'Ações'],
+    columns: ['Foto', 'Código', 'Descrição do Serviço', 'Categoria', 'Valor Base', 'Custo Estimado', 'Unidade', 'Situação', 'Ações'],
     filterTypeLabel: 'Categoria',
     filterTypeOptions: [{ val: 'Serviços Técnicos', label: 'Serviços Técnicos' }],
     filterSituationOptions: [{ val: 'A', label: 'Ativos' }, { val: 'I', label: 'Inativos' }]
@@ -669,8 +669,18 @@ function generateRowHTML(mod, item) {
     const precoCusto = typeof item.precoCusto === 'object' ? (item.precoCusto?.preco || 0) : (item.precoCusto || 0);
     const categoria = typeof item.categoria === 'object' ? (item.categoria?.descricao || 'Geral') : (item.categoria || 'Geral');
 
+    const defaultImg = item.tipo === 'S' 
+      ? 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=120&auto=format&fit=crop&q=80' 
+      : 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=120&auto=format&fit=crop&q=80';
+    const imgUrl = item.imagemURL || item.midia?.imagens?.externas?.[0]?.link || item.anexos?.[0]?.url || item.imagens?.[0]?.link || defaultImg;
+
     return `
       <tr onclick="openClientDetails(${item.id})">
+        <td style="width: 54px; text-align: center;">
+          <div class="prod-thumb-wrapper" title="${escapeHtml(item.nome || 'Produto')}">
+            <img src="${imgUrl}" class="prod-thumb-img" alt="Foto" loading="lazy" onerror="this.onerror=null; this.src='${defaultImg}';">
+          </div>
+        </td>
         <td><span class="text-mono font-bold" style="font-size: 11px;">${item.codigo || item.id}</span></td>
         <td><strong>${escapeHtml(item.nome || item.descricao || '--')}</strong></td>
         <td><span class="badge-tag-custom">${escapeHtml(categoria)}</span></td>
@@ -817,6 +827,21 @@ async function openClientDetails(itemId) {
 
   // Raw JSON
   elements.detRawJson.textContent = JSON.stringify(item, null, 2);
+
+  // Hero da Foto do Produto no Drawer
+  const drawerProductHero = document.getElementById('drawerProductHero');
+  const drawerProductImg = document.getElementById('drawerProductImg');
+  const defaultImg = item.tipo === 'S' 
+    ? 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&auto=format&fit=crop&q=80' 
+    : 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=500&auto=format&fit=crop&q=80';
+  const imgUrl = item.imagemURL || item.midia?.imagens?.externas?.[0]?.link || item.anexos?.[0]?.url || item.imagens?.[0]?.link || (state.currentModule === 'products' || state.currentModule === 'services' ? defaultImg : null);
+
+  if (imgUrl && drawerProductHero && drawerProductImg) {
+    drawerProductImg.src = imgUrl;
+    drawerProductHero.style.display = 'flex';
+  } else if (drawerProductHero) {
+    drawerProductHero.style.display = 'none';
+  }
 
   // Supabase Complementos
   await loadClientComplements(item);
@@ -1472,6 +1497,7 @@ async function handleCreateProduct(e) {
   const precoCusto = parseFloat(document.getElementById('prodPrecoCusto').value) || 0;
   const estoque = parseInt(document.getElementById('prodEstoque').value, 10) || 0;
   const ncm = document.getElementById('prodNcm').value.trim();
+  const imagemURL = document.getElementById('prodImagemURL')?.value?.trim() || '';
   const observacoes = document.getElementById('prodObservacoes').value.trim();
 
   if (!nome) {
@@ -1494,6 +1520,7 @@ async function handleCreateProduct(e) {
       precoCusto,
       estoque,
       ncm,
+      imagemURL,
       observacoes
     };
 

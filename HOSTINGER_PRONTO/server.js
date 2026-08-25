@@ -663,7 +663,7 @@ app.get('/api/produtos', authenticateToken, async (req, res) => {
 // Cadastrar Novo Produto no Bling
 app.post('/api/produtos', authenticateToken, async (req, res) => {
   try {
-    const { nome, codigo, preco, precoCusto, unidade = 'UN', tipo = 'P', categoria, estoque = 0, ncm, observacoes } = req.body;
+    const { nome, codigo, preco, precoCusto, unidade = 'UN', tipo = 'P', categoria, estoque = 0, ncm, observacoes, imagemURL } = req.body;
 
     if (!nome) {
       return res.status(400).json({ error: 'O nome do produto é obrigatório.' });
@@ -683,6 +683,14 @@ app.post('/api/produtos', authenticateToken, async (req, res) => {
       payload.tributacao = { ncm: ncm.replace(/\D/g, '') };
     }
 
+    if (imagemURL) {
+      payload.midia = {
+        imagens: {
+          externas: [{ link: imagemURL.trim() }]
+        }
+      };
+    }
+
     let createdProduct = null;
     let accessToken = await getValidAccessToken();
 
@@ -696,6 +704,7 @@ app.post('/api/produtos', authenticateToken, async (req, res) => {
           }
         });
         createdProduct = response.data?.data || response.data;
+        if (imagemURL && createdProduct) createdProduct.imagemURL = imagemURL.trim();
       } catch (apiErr) {
         if (apiErr.response && apiErr.response.status === 401) {
           const newTokens = await refreshAccessToken();
@@ -707,6 +716,7 @@ app.post('/api/produtos', authenticateToken, async (req, res) => {
             }
           });
           createdProduct = retryRes.data?.data || retryRes.data;
+          if (imagemURL && createdProduct) createdProduct.imagemURL = imagemURL.trim();
         } else {
           throw apiErr;
         }
@@ -719,7 +729,8 @@ app.post('/api/produtos', authenticateToken, async (req, res) => {
         precoCusto: parseFloat(precoCusto) || 0,
         categoria: categoria || 'Geral',
         estoque: parseInt(estoque, 10) || 0,
-        observacoes: observacoes || ''
+        observacoes: observacoes || '',
+        imagemURL: imagemURL || 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=300&auto=format&fit=crop&q=80'
       };
       DEMO_DATA.produtos.unshift(createdProduct);
     }
@@ -970,11 +981,71 @@ const DEMO_DATA = {
     }
   ],
   produtos: [
-    { id: 101, nome: "Ar Condicionado Split Inverter 12000 BTUs", codigo: "AC-12K-INV", preco: 2890.00, precoCusto: 1950.00, unidade: "UN", tipo: "P", situacao: "A", estoque: 14, categoria: "Climatização" },
-    { id: 102, nome: "Cabo de Cobre Flexível 6mm (Rolo 100m)", codigo: "EL-CAB-6MM", preco: 420.00, precoCusto: 280.00, unidade: "RL", tipo: "P", situacao: "A", estoque: 38, categoria: "Material Elétrico" },
-    { id: 103, nome: "Disjuntor Bipolar DIN 32A Steck", codigo: "EL-DISJ-32A", preco: 48.50, precoCusto: 28.00, unidade: "UN", tipo: "P", situacao: "A", estoque: 95, categoria: "Proteção Elétrica" },
-    { id: 104, nome: "Serviço de Instalação e Infraestrutura HVAC", codigo: "SRV-INST-HVAC", preco: 850.00, precoCusto: 300.00, unidade: "SV", tipo: "S", situacao: "A", estoque: 999, categoria: "Serviços Técnicos" },
-    { id: 105, nome: "Manutenção Preventiva e Higienização de Splits", codigo: "SRV-MANUT-PREV", preco: 250.00, precoCusto: 80.00, unidade: "SV", tipo: "S", situacao: "A", estoque: 999, categoria: "Serviços Técnicos" }
+    { 
+      id: 101, 
+      nome: "Ar Condicionado Split Inverter 12000 BTUs", 
+      codigo: "AC-12K-INV", 
+      preco: 2890.00, 
+      precoCusto: 1950.00, 
+      unidade: "UN", 
+      tipo: "P", 
+      situacao: "A", 
+      estoque: 14, 
+      categoria: "Climatização",
+      imagemURL: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=300&auto=format&fit=crop&q=80"
+    },
+    { 
+      id: 102, 
+      nome: "Cabo de Cobre Flexível 6mm (Rolo 100m)", 
+      codigo: "EL-CAB-6MM", 
+      preco: 420.00, 
+      precoCusto: 280.00, 
+      unidade: "RL", 
+      tipo: "P", 
+      situacao: "A", 
+      estoque: 38, 
+      categoria: "Material Elétrico",
+      imagemURL: "https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=300&auto=format&fit=crop&q=80"
+    },
+    { 
+      id: 103, 
+      nome: "Disjuntor Bipolar DIN 32A Steck", 
+      codigo: "EL-DISJ-32A", 
+      preco: 48.50, 
+      precoCusto: 28.00, 
+      unidade: "UN", 
+      tipo: "P", 
+      situacao: "A", 
+      estoque: 95, 
+      categoria: "Proteção Elétrica",
+      imagemURL: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&auto=format&fit=crop&q=80"
+    },
+    { 
+      id: 104, 
+      nome: "Serviço de Instalação e Infraestrutura HVAC", 
+      codigo: "SRV-INST-HVAC", 
+      preco: 850.00, 
+      precoCusto: 300.00, 
+      unidade: "SV", 
+      tipo: "S", 
+      situacao: "A", 
+      estoque: 999, 
+      categoria: "Serviços Técnicos",
+      imagemURL: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=300&auto=format&fit=crop&q=80"
+    },
+    { 
+      id: 105, 
+      nome: "Manutenção Preventiva e Higienização de Splits", 
+      codigo: "SRV-MANUT-PREV", 
+      preco: 250.00, 
+      precoCusto: 80.00, 
+      unidade: "SV", 
+      tipo: "S", 
+      situacao: "A", 
+      estoque: 999, 
+      categoria: "Serviços Técnicos",
+      imagemURL: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=300&auto=format&fit=crop&q=80"
+    }
   ],
   pedidos: [
     { id: 2001, numero: 5082, data: "2026-03-18", cliente: { nome: "FLR Instalações e Manutenções LTDA", id: 168492019 }, total: 6630.00, situacao: "Atendido", vendedor: "Roberto Andrade", itensQtd: 3 },

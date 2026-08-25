@@ -1714,6 +1714,12 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
     <div class="drawer-body">
       <!-- Aba: Dados Gerais -->
       <div class="tab-content active" id="tab-geral">
+        <!-- Hero da Foto do Produto / Material -->
+        <div class="drawer-product-hero" id="drawerProductHero" style="display: none; margin: 0 0 16px 0;">
+          <img id="drawerProductImg" src="" alt="Foto do Produto">
+          <span class="drawer-product-hero-badge"><i class="fa-solid fa-camera"></i> Foto do Item</span>
+        </div>
+
         <div class="section-card">
           <h4 class="section-title"><i class="fa-solid fa-user"></i> Identificação</h4>
           <div class="detail-grid">
@@ -2100,6 +2106,12 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
             <div class="form-group">
               <label for="prodNcm">NCM (Fiscal)</label>
               <input type="text" id="prodNcm" class="form-control text-mono" placeholder="Ex: 8415.10.11">
+            </div>
+
+            <div class="form-group col-2">
+              <label for="prodImagemURL">URL da Imagem / Foto do Produto (Opcional)</label>
+              <input type="url" id="prodImagemURL" class="form-control" placeholder="https://exemplo.com/fotos/produto.jpg">
+              <span class="text-muted" style="font-size: 11px; margin-top: 4px; display: block;">Link direto para imagem (JPG, PNG ou WebP).</span>
             </div>
 
             <div class="form-group col-2">
