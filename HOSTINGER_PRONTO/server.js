@@ -27,6 +27,8 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'flr_bling_super_jwt_secret_2026';
+const TOKENS_FILE = path.join(__dirname, 'tokens.json');
+
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ limit: '25mb', extended: true }));
