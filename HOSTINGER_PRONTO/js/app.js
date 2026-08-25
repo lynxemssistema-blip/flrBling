@@ -559,10 +559,21 @@ function updateModuleKPIs(moduleKey, items) {
     elements.dynStatLabel2.textContent = 'Itens Ativos';
     elements.dynStatVal2.textContent = items.filter(i => i.situacao === 'A').length;
     elements.dynStatLabel3.textContent = 'Média de Preço';
-    const avg = items.length ? items.reduce((acc, p) => acc + (p.preco || 0), 0) / items.length : 0;
+    const avg = items.length ? items.reduce((acc, p) => {
+      const val = typeof p.preco === 'object' ? (p.preco?.preco || 0) : (p.preco || 0);
+      return acc + val;
+    }, 0) / items.length : 0;
     elements.dynStatVal3.textContent = formatCurrency(avg);
-    elements.dynStatLabel4.textContent = 'Em Estoque';
-    elements.dynStatVal4.textContent = items.reduce((acc, p) => acc + (p.estoque || 0), 0);
+    elements.dynStatLabel4.textContent = 'Total em Estoque';
+    elements.dynStatVal4.textContent = items.reduce((acc, p) => {
+      let est = 0;
+      if (typeof p.estoque === 'object' && p.estoque !== null) {
+        est = p.estoque.saldoFisicoTotal || p.estoque.saldoVirtualTotal || 0;
+      } else if (typeof p.estoque === 'number') {
+        est = p.estoque;
+      }
+      return acc + est;
+    }, 0);
   } else if (moduleKey === 'orders' || moduleKey === 'proposals') {
     elements.dynStatLabel2.textContent = 'Total Faturado';
     const sum = items.reduce((acc, o) => acc + (o.total || 0), 0);
@@ -647,14 +658,25 @@ function generateRowHTML(mod, item) {
 
   if (mod === 'products' || mod === 'services') {
     const sitClass = item.situacao === 'A' ? 'active' : 'inactive';
+    let estoqueDisplay = '--';
+    if (typeof item.estoque === 'object' && item.estoque !== null) {
+      estoqueDisplay = item.estoque.saldoFisicoTotal !== undefined ? item.estoque.saldoFisicoTotal : (item.estoque.saldoVirtualTotal !== undefined ? item.estoque.saldoVirtualTotal : '--');
+    } else if (typeof item.estoque === 'number') {
+      estoqueDisplay = item.estoque;
+    }
+
+    const precoVenda = typeof item.preco === 'object' ? (item.preco?.preco || 0) : (item.preco || 0);
+    const precoCusto = typeof item.precoCusto === 'object' ? (item.precoCusto?.preco || 0) : (item.precoCusto || 0);
+    const categoria = typeof item.categoria === 'object' ? (item.categoria?.descricao || 'Geral') : (item.categoria || 'Geral');
+
     return `
       <tr onclick="openClientDetails(${item.id})">
         <td><span class="text-mono font-bold" style="font-size: 11px;">${item.codigo || item.id}</span></td>
-        <td><strong>${escapeHtml(item.nome || '--')}</strong></td>
-        <td><span class="badge-tag-custom">${escapeHtml(item.categoria || 'Geral')}</span></td>
-        <td style="text-align: right;"><span class="text-emerald font-bold">${formatCurrency(item.preco)}</span></td>
-        <td style="text-align: right;"><span class="text-muted">${formatCurrency(item.precoCusto)}</span></td>
-        <td style="text-align: center;"><strong>${item.estoque !== undefined ? item.estoque : '--'}</strong></td>
+        <td><strong>${escapeHtml(item.nome || item.descricao || '--')}</strong></td>
+        <td><span class="badge-tag-custom">${escapeHtml(categoria)}</span></td>
+        <td style="text-align: right;"><span class="text-emerald font-bold">${formatCurrency(precoVenda)}</span></td>
+        <td style="text-align: right;"><span class="text-muted">${formatCurrency(precoCusto)}</span></td>
+        <td style="text-align: center;"><strong>${estoqueDisplay}</strong></td>
         <td style="text-align: center;"><span class="text-mono">${item.unidade || 'UN'}</span></td>
         <td style="text-align: center;"><span class="badge-status ${sitClass}">● ${item.situacao === 'A' ? 'Ativo' : 'Inativo'}</span></td>
         <td style="text-align: right;" onclick="event.stopPropagation();">
