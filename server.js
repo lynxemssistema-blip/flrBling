@@ -660,6 +660,86 @@ app.get('/api/produtos', authenticateToken, async (req, res) => {
   }
 });
 
+// Cadastrar Novo Produto no Bling
+app.post('/api/produtos', authenticateToken, async (req, res) => {
+  try {
+    const { nome, codigo, preco, precoCusto, unidade = 'UN', tipo = 'P', categoria, estoque = 0, ncm, observacoes } = req.body;
+
+    if (!nome) {
+      return res.status(400).json({ error: 'O nome do produto é obrigatório.' });
+    }
+
+    const payload = {
+      nome: nome.trim(),
+      codigo: codigo ? codigo.trim() : `PRD-${Date.now().toString().slice(-4)}`,
+      preco: parseFloat(preco) || 0,
+      tipo: tipo || 'P',
+      situacao: 'A',
+      formato: 'S',
+      unidade: unidade || 'UN'
+    };
+
+    if (ncm) {
+      payload.tributacao = { ncm: ncm.replace(/\D/g, '') };
+    }
+
+    let createdProduct = null;
+    let accessToken = await getValidAccessToken();
+
+    if (accessToken) {
+      try {
+        const response = await axios.post('https://bling.com.br/Api/v3/produtos', payload, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        createdProduct = response.data?.data || response.data;
+      } catch (apiErr) {
+        if (apiErr.response && apiErr.response.status === 401) {
+          const newTokens = await refreshAccessToken();
+          const retryRes = await axios.post('https://bling.com.br/Api/v3/produtos', payload, {
+            headers: {
+              'Authorization': `Bearer ${newTokens.access_token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          });
+          createdProduct = retryRes.data?.data || retryRes.data;
+        } else {
+          throw apiErr;
+        }
+      }
+    } else {
+      // Fallback em memória para demonstração
+      createdProduct = {
+        id: Date.now(),
+        ...payload,
+        precoCusto: parseFloat(precoCusto) || 0,
+        categoria: categoria || 'Geral',
+        estoque: parseInt(estoque, 10) || 0,
+        observacoes: observacoes || ''
+      };
+      DEMO_DATA.produtos.unshift(createdProduct);
+    }
+
+    await logActivity('product_create', null, `Produto cadastrado: ${payload.nome}`, { payload }, req.user.id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Produto cadastrado com sucesso!',
+      data: createdProduct
+    });
+  } catch (err) {
+    console.error('Erro ao cadastrar produto:', err.response?.data || err.message);
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao cadastrar produto no Bling',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
 app.get('/api/produtos/:id', authenticateToken, async (req, res) => {
   try {
     const data = await fetchBlingAPI(`produtos/${req.params.id}`);

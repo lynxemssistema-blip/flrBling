@@ -247,6 +247,15 @@ const elements = {
   navOrdersCount: document.getElementById('navOrdersCount'),
   navOsCount: document.getElementById('navOsCount'),
 
+  // Novo Produto / Modal
+  btnOpenNewItemModal: document.getElementById('btnOpenNewItemModal'),
+  lblNewItemBtn: document.getElementById('lblNewItemBtn'),
+  modalNewProduct: document.getElementById('modalNewProduct'),
+  btnCloseNewProductModal: document.getElementById('btnCloseNewProductModal'),
+  btnCloseNewProductModalFooter: document.getElementById('btnCloseNewProductModalFooter'),
+  formNewProduct: document.getElementById('formNewProduct'),
+  btnSubmitNewProduct: document.getElementById('btnSubmitNewProduct'),
+
   // Drawer
   drawerOverlay: document.getElementById('drawerOverlay'),
   clientDrawer: document.getElementById('clientDrawer'),
@@ -985,6 +994,12 @@ function setupEventListeners() {
   elements.btnSaveManualToken?.addEventListener('click', handleSaveManualToken);
   elements.btnLogoutToken?.addEventListener('click', handleLogoutBling);
 
+  // Novo Produto / Modal Listeners
+  elements.btnOpenNewItemModal?.addEventListener('click', openNewProductModal);
+  elements.btnCloseNewProductModal?.addEventListener('click', () => closeModal(elements.modalNewProduct));
+  elements.btnCloseNewProductModalFooter?.addEventListener('click', () => closeModal(elements.modalNewProduct));
+  elements.formNewProduct?.addEventListener('submit', handleCreateProduct);
+
   // Data Source & Refresh
   elements.btnSourceLive?.addEventListener('click', () => setDataSource('live'));
   elements.btnSourceDemo?.addEventListener('click', () => setDataSource('demo'));
@@ -1412,6 +1427,81 @@ async function handleLogoutBling() {
     setDataSource('demo');
   } catch (err) {
     showNotification(err.message, 'error');
+  }
+}
+
+// ==========================================================================
+// CADASTRO DE NOVO PRODUTO / SERVIÇO NO BLING (API v3)
+// ==========================================================================
+window.openNewProductModal = function() {
+  if (elements.formNewProduct) elements.formNewProduct.reset();
+  if (elements.modalNewProduct) openModal(elements.modalNewProduct);
+};
+
+async function handleCreateProduct(e) {
+  e.preventDefault();
+
+  const nome = document.getElementById('prodNome').value.trim();
+  const codigo = document.getElementById('prodCodigo').value.trim();
+  const tipo = document.getElementById('prodTipo').value;
+  const categoria = document.getElementById('prodCategoria').value.trim();
+  const unidade = document.getElementById('prodUnidade').value;
+  const preco = parseFloat(document.getElementById('prodPreco').value) || 0;
+  const precoCusto = parseFloat(document.getElementById('prodPrecoCusto').value) || 0;
+  const estoque = parseInt(document.getElementById('prodEstoque').value, 10) || 0;
+  const ncm = document.getElementById('prodNcm').value.trim();
+  const observacoes = document.getElementById('prodObservacoes').value.trim();
+
+  if (!nome) {
+    showNotification('O nome do produto é obrigatório.', 'error');
+    return;
+  }
+
+  const btnSubmit = document.getElementById('btnSubmitNewProduct');
+  btnSubmit.disabled = true;
+  btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando no Bling...';
+
+  try {
+    const payload = {
+      nome,
+      codigo,
+      tipo,
+      categoria,
+      unidade,
+      preco,
+      precoCusto,
+      estoque,
+      ncm,
+      observacoes
+    };
+
+    const response = await fetch('/api/produtos', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.authToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || result.details?.error_description || 'Erro ao cadastrar produto');
+
+    showNotification('Produto cadastrado com sucesso no Bling & Supabase!', 'success');
+    closeModal(elements.modalNewProduct);
+    elements.formNewProduct.reset();
+
+    // Se estiver na tela de produtos ou serviços, recarrega a lista
+    if (state.currentModule === 'products' || state.currentModule === 'services') {
+      await loadModuleData(state.currentModule);
+    } else {
+      await switchERPView('products');
+    }
+  } catch (err) {
+    showNotification(err.message, 'error');
+  } finally {
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar no Bling & Supabase';
   }
 }
 

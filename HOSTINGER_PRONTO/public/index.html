@@ -1488,7 +1488,10 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
                 <h3 id="moduleTableTitle">Listagem de Clientes e Contatos</h3>
                 <span class="records-badge" id="recordsBadge">0 registros</span>
               </div>
-              <div class="table-tools">
+              <div class="table-tools" style="display: flex; align-items: center; gap: 12px;">
+                <button class="btn btn-bling-primary btn-sm" id="btnOpenNewItemModal" onclick="openNewProductModal()" title="Cadastrar Novo Produto ou Serviço no Bling">
+                  <i class="fa-solid fa-plus"></i> <span id="lblNewItemBtn">Novo Produto</span>
+                </button>
                 <span class="last-sync-text" id="lastSyncText">Última atualização: --:--:--</span>
               </div>
             </div>
@@ -2024,6 +2027,95 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
       <div class="modal-footer">
         <button class="btn btn-secondary" id="btnCloseAuthModalFooter">Fechar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       7. MODAL DE CADASTRO DE PRODUTO / MATERIAL NO BLING (API v3)
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalNewProduct">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-boxes-stacked text-purple"></i>
+          <h3>Cadastrar Novo Produto ou Serviço no Bling</h3>
+        </div>
+        <button class="modal-close" id="btnCloseNewProductModal">&times;</button>
+      </div>
+
+      <form id="formNewProduct">
+        <div class="modal-body">
+          <div class="form-grid-2">
+            <div class="form-group col-2">
+              <label for="prodNome">Nome / Descrição do Produto ou Serviço *</label>
+              <input type="text" id="prodNome" class="form-control" placeholder="Ex: Ar Condicionado Split Inverter 18000 BTUs" required>
+            </div>
+
+            <div class="form-group">
+              <label for="prodCodigo">Código / SKU / Referência</label>
+              <input type="text" id="prodCodigo" class="form-control text-mono" placeholder="Ex: AC-18K-INV">
+            </div>
+
+            <div class="form-group">
+              <label for="prodTipo">Tipo do Item</label>
+              <select id="prodTipo" class="form-control">
+                <option value="P" selected>Produto Físico / Material</option>
+                <option value="S">Serviço Técnico</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="prodCategoria">Categoria</label>
+              <input type="text" id="prodCategoria" class="form-control" placeholder="Ex: Climatização / Material Elétrico">
+            </div>
+
+            <div class="form-group">
+              <label for="prodUnidade">Unidade de Medida</label>
+              <select id="prodUnidade" class="form-control">
+                <option value="UN" selected>UN - Unidade</option>
+                <option value="PC">PC - Peça</option>
+                <option value="RL">RL - Rolo</option>
+                <option value="M">M - Metro</option>
+                <option value="KG">KG - Quilograma</option>
+                <option value="SV">SV - Serviço</option>
+                <option value="CX">CX - Caixa</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="prodPreco">Preço de Venda (R$) *</label>
+              <input type="number" step="0.01" id="prodPreco" class="form-control" placeholder="0.00" required>
+            </div>
+
+            <div class="form-group">
+              <label for="prodPrecoCusto">Preço de Custo (R$)</label>
+              <input type="number" step="0.01" id="prodPrecoCusto" class="form-control" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+              <label for="prodEstoque">Estoque Inicial</label>
+              <input type="number" id="prodEstoque" class="form-control" placeholder="0" value="1">
+            </div>
+
+            <div class="form-group">
+              <label for="prodNcm">NCM (Fiscal)</label>
+              <input type="text" id="prodNcm" class="form-control text-mono" placeholder="Ex: 8415.10.11">
+            </div>
+
+            <div class="form-group col-2">
+              <label for="prodObservacoes">Observações / Descrição Técnica Detalhada</label>
+              <textarea id="prodObservacoes" class="form-control" rows="3" placeholder="Informações técnicas adicionais, especificações ou detalhes de garantia..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCloseNewProductModalFooter">Cancelar</button>
+          <button type="submit" class="btn btn-bling-primary" id="btnSubmitNewProduct">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar no Bling & Supabase
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
