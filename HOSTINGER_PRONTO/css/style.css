@@ -1490,6 +1490,118 @@ button, input, select, textarea {
 .toast.error { border-left: 4px solid var(--bling-red); }
 .toast.info { border-left: 4px solid var(--bling-blue); }
 
+/* Multi-Module ERP Views & Dashboard Styles */
+.erp-view-pane {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.erp-view-pane.active {
+  display: flex;
+}
+
+.dashboard-widgets-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 1000px) {
+  .dashboard-widgets-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.widget-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.widget-header h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.quick-module-btn {
+  background: #F8FAFC;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.quick-module-btn i {
+  font-size: 20px;
+}
+
+.quick-module-btn:hover {
+  background: #FFFFFF;
+  border-color: var(--bling-blue);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  color: var(--bling-blue);
+}
+
+.integration-status-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #F8FAFC;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color-light);
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  border-bottom: 1px dashed var(--border-color-light);
+  padding-bottom: 6px;
+}
+
+.status-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.badge-tag-custom {
+  background: var(--bling-purple-light);
+  color: var(--bling-purple);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
 /* Responsiveness */
 @media (max-width: 900px) {
   .hero-container { grid-template-columns: 1fr; }
@@ -1498,3 +1610,4 @@ button, input, select, textarea {
   .header-center { display: none; }
   .client-drawer { max-width: 100%; }
 }
+

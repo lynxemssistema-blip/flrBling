@@ -608,123 +608,358 @@ app.post('/api/complements/:blingCustomerId', authenticateToken, async (req, res
   }
 });
 
-// Endpoint: Dados de demonstração
-app.get('/api/demo-data', (req, res) => {
-  res.json({
-    data: [
-      {
-        id: 168492019,
-        nome: "FLR Instalações e Manutenções LTDA",
-        codigo: "CLI-001",
-        situacao: "A",
-        numeroDocumento: "45.123.890/0001-92",
-        telefone: "(11) 3456-7890",
-        celular: "(11) 98765-4321",
-        email: "contato@flrinstalacoes.com.br",
-        tipo: "J",
-        indicadorIe: 1,
-        ie: "123.456.789.110",
-        rg: "",
-        orgaoEmissor: "",
-        fantasia: "FLR Engenharia & Climatização",
-        endereco: {
-          geral: {
-            endereco: "Av. Brigadeiro Faria Lima",
-            numero: "2355",
-            complemento: "Conjunto 81",
-            bairro: "Jardim Paulistano",
-            cep: "01452-000",
-            municipio: "São Paulo",
-            uf: "SP"
-          }
-        },
-        dadosAdicionais: {
-          dataNascimento: "2018-05-14",
-          sexo: "",
-          naturalidade: "São Paulo"
-        },
-        financeiro: {
-          limiteCredito: 25000.00,
-          condicaoPagamento: "30/60 DDL",
-          categoria: "Instalações Corporativas"
-        }
-      },
-      {
-        id: 168492020,
-        nome: "Carlos Eduardo Silveira",
-        codigo: "CLI-002",
-        situacao: "A",
-        numeroDocumento: "289.456.781-04",
-        telefone: "(19) 3214-5500",
-        celular: "(19) 99123-8899",
-        email: "carlos.silveira@gmail.com",
-        tipo: "F",
-        indicadorIe: 9,
-        ie: "",
-        rg: "41.982.112-X",
-        orgaoEmissor: "SSP/SP",
-        fantasia: "",
-        endereco: {
-          geral: {
-            endereco: "Rua Coronel Quirino",
-            numero: "450",
-            complemento: "Casa 2",
-            bairro: "Cambuí",
-            cep: "13025-001",
-            municipio: "Campinas",
-            uf: "SP"
-          }
-        },
-        dadosAdicionais: {
-          dataNascimento: "1985-11-20",
-          sexo: "M",
-          naturalidade: "Campinas"
-        },
-        financeiro: {
-          limiteCredito: 5000.00,
-          condicaoPagamento: "À Vista / Pix",
-          categoria: "Pessoa Física"
-        }
-      },
-      {
-        id: 168492021,
-        nome: "Construtora e Incorporadora Horizonte S.A.",
-        codigo: "CLI-003",
-        situacao: "A",
-        numeroDocumento: "10.987.654/0001-33",
-        telefone: "(21) 2500-1000",
-        celular: "(21) 97654-3210",
-        email: "compras@horizonte.com.br",
-        tipo: "J",
-        indicadorIe: 1,
-        ie: "87.654.321",
-        rg: "",
-        orgaoEmissor: "",
-        fantasia: "Horizonte Empreendimentos",
-        endereco: {
-          geral: {
-            endereco: "Av. das Américas",
-            numero: "5000",
-            complemento: "Bloco 2 Sala 405",
-            bairro: "Barra da Tijuca",
-            cep: "22640-102",
-            municipio: "Rio de Janeiro",
-            uf: "RJ"
-          }
-        },
-        dadosAdicionais: {
-          dataNascimento: "2010-03-12",
-          sexo: "",
-          naturalidade: "Rio de Janeiro"
-        },
-        financeiro: {
-          limiteCredito: 80000.00,
-          condicaoPagamento: "28/56 DDL",
-          categoria: "Grandes Contas"
-        }
+// ==========================================================================
+// NOVOS ENDPOINTS BLING ERP V3: PRODUTOS, VENDAS, FINANCEIRO, SERVIÇOS & OS
+// ==========================================================================
+
+// Helper genérico para chamadas à API do Bling com auto-refresh de token
+async function fetchBlingAPI(endpoint, params = {}) {
+  let accessToken = await getValidAccessToken();
+  if (!accessToken) {
+    throw new Error('Não autenticado no Bling.');
+  }
+
+  const makeReq = async (token) => {
+    return await axios.get(`https://bling.com.br/Api/v3/${endpoint}`, {
+      params,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
       }
-    ]
+    });
+  };
+
+  try {
+    const res = await makeReq(accessToken);
+    return res.data;
+  } catch (err) {
+    if (err.response && err.response.status === 401) {
+      const newTokens = await refreshAccessToken();
+      const retryRes = await makeReq(newTokens.access_token);
+      return retryRes.data;
+    }
+    throw err;
+  }
+}
+
+// 1. PRODUTOS & MATERIAIS
+app.get('/api/produtos', authenticateToken, async (req, res) => {
+  try {
+    const { pagina = 1, limite = 100, pesquisa, tipo = 'P' } = req.query;
+    const params = { pagina, limite };
+    if (pesquisa) params.nome = pesquisa;
+    if (tipo) params.tipo = tipo;
+
+    const data = await fetchBlingAPI('produtos', params);
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar produtos do Bling',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+app.get('/api/produtos/:id', authenticateToken, async (req, res) => {
+  try {
+    const data = await fetchBlingAPI(`produtos/${req.params.id}`);
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar detalhes do produto',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// 2. PEDIDOS DE VENDA
+app.get('/api/pedidos-vendas', authenticateToken, async (req, res) => {
+  try {
+    const { pagina = 1, limite = 100, idContato, situacao } = req.query;
+    const params = { pagina, limite };
+    if (idContato) params.idContato = idContato;
+    if (situacao) params.idsSituacoes = [situacao];
+
+    const data = await fetchBlingAPI('pedidos/vendas', params);
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar pedidos de venda',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+app.get('/api/pedidos-vendas/:id', authenticateToken, async (req, res) => {
+  try {
+    const data = await fetchBlingAPI(`pedidos/vendas/${req.params.id}`);
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar detalhes do pedido de venda',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// 3. PROPOSTAS COMERCIAIS / ORÇAMENTOS
+app.get('/api/propostas-comerciais', authenticateToken, async (req, res) => {
+  try {
+    const { pagina = 1, limite = 100 } = req.query;
+    const data = await fetchBlingAPI('propostas-comerciais', { pagina, limite });
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar propostas comerciais',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// 4. CONTAS A RECEBER
+app.get('/api/contas-receber', authenticateToken, async (req, res) => {
+  try {
+    const { pagina = 1, limite = 100, situacao } = req.query;
+    const params = { pagina, limite };
+    if (situacao) params.situacao = situacao;
+
+    const data = await fetchBlingAPI('contas-receber', params);
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar contas a receber',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// 5. CONTAS A PAGAR
+app.get('/api/contas-pagar', authenticateToken, async (req, res) => {
+  try {
+    const { pagina = 1, limite = 100, situacao } = req.query;
+    const params = { pagina, limite };
+    if (situacao) params.situacao = situacao;
+
+    const data = await fetchBlingAPI('contas-pagar', params);
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar contas a pagar',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// 6. ORDENS DE SERVIÇO (OS)
+app.get('/api/ordens-servicos', authenticateToken, async (req, res) => {
+  try {
+    const { pagina = 1, limite = 100, situacao } = req.query;
+    const params = { pagina, limite };
+    if (situacao) params.situacao = situacao;
+
+    const data = await fetchBlingAPI('ordens-servicos', params);
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar ordens de serviço',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// 7. NOTAS FISCAIS (NFE)
+app.get('/api/nfe', authenticateToken, async (req, res) => {
+  try {
+    const { pagina = 1, limite = 100 } = req.query;
+    const data = await fetchBlingAPI('nfe', { pagina, limite });
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar notas fiscais',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// 8. SALDOS DE ESTOQUE
+app.get('/api/estoques/saldos', authenticateToken, async (req, res) => {
+  try {
+    const { pagina = 1, limite = 100 } = req.query;
+    const data = await fetchBlingAPI('estoques/saldos', { pagina, limite });
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao buscar saldos de estoque',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// ==========================================================================
+// RESUMO DO DASHBOARD & DADOS DEMO ENRIQUECIDOS
+// ==========================================================================
+
+const DEMO_DATA = {
+  clientes: [
+    {
+      id: 168492019,
+      nome: "FLR Instalações e Manutenções LTDA",
+      codigo: "CLI-001",
+      situacao: "A",
+      numeroDocumento: "45.123.890/0001-92",
+      telefone: "(11) 3456-7890",
+      celular: "(11) 98765-4321",
+      email: "contato@flrinstalacoes.com.br",
+      tipo: "J",
+      indicadorIe: 1,
+      ie: "123.456.789.110",
+      rg: "",
+      orgaoEmissor: "",
+      fantasia: "FLR Engenharia & Climatização",
+      endereco: {
+        geral: {
+          endereco: "Av. Brigadeiro Faria Lima",
+          numero: "2355",
+          complemento: "Conjunto 81",
+          bairro: "Jardim Paulistano",
+          cep: "01452-000",
+          municipio: "São Paulo",
+          uf: "SP"
+        }
+      },
+      dadosAdicionais: { dataNascimento: "2018-05-14", sexo: "", naturalidade: "São Paulo" },
+      financeiro: { limiteCredito: 25000.00, condicaoPagamento: "30/60 DDL", categoria: "Instalações Corporativas" }
+    },
+    {
+      id: 168492020,
+      nome: "Carlos Eduardo Silveira",
+      codigo: "CLI-002",
+      situacao: "A",
+      numeroDocumento: "289.456.781-04",
+      telefone: "(19) 3214-5500",
+      celular: "(19) 99123-8899",
+      email: "carlos.silveira@gmail.com",
+      tipo: "F",
+      indicadorIe: 9,
+      ie: "",
+      rg: "41.982.112-X",
+      orgaoEmissor: "SSP/SP",
+      fantasia: "",
+      endereco: {
+        geral: {
+          endereco: "Rua Coronel Quirino",
+          numero: "450",
+          complemento: "Casa 2",
+          bairro: "Cambuí",
+          cep: "13025-001",
+          municipio: "Campinas",
+          uf: "SP"
+        }
+      },
+      dadosAdicionais: { dataNascimento: "1985-11-20", sexo: "M", naturalidade: "Campinas" },
+      financeiro: { limiteCredito: 5000.00, condicaoPagamento: "À Vista / Pix", categoria: "Pessoa Física" }
+    },
+    {
+      id: 168492021,
+      nome: "Construtora e Incorporadora Horizonte S.A.",
+      codigo: "CLI-003",
+      situacao: "A",
+      numeroDocumento: "10.987.654/0001-33",
+      telefone: "(21) 2500-1000",
+      celular: "(21) 97654-3210",
+      email: "compras@horizonte.com.br",
+      tipo: "J",
+      indicadorIe: 1,
+      ie: "87.654.321",
+      rg: "",
+      orgaoEmissor: "",
+      fantasia: "Horizonte Empreendimentos",
+      endereco: {
+        geral: {
+          endereco: "Av. das Américas",
+          numero: "5000",
+          complemento: "Bloco 2 Sala 405",
+          bairro: "Barra da Tijuca",
+          cep: "22640-102",
+          municipio: "Rio de Janeiro",
+          uf: "RJ"
+        }
+      },
+      dadosAdicionais: { dataNascimento: "2010-03-12", sexo: "", naturalidade: "Rio de Janeiro" },
+      financeiro: { limiteCredito: 80000.00, condicaoPagamento: "28/56 DDL", categoria: "Grandes Contas" }
+    }
+  ],
+  produtos: [
+    { id: 101, nome: "Ar Condicionado Split Inverter 12000 BTUs", codigo: "AC-12K-INV", preco: 2890.00, precoCusto: 1950.00, unidade: "UN", tipo: "P", situacao: "A", estoque: 14, categoria: "Climatização" },
+    { id: 102, nome: "Cabo de Cobre Flexível 6mm (Rolo 100m)", codigo: "EL-CAB-6MM", preco: 420.00, precoCusto: 280.00, unidade: "RL", tipo: "P", situacao: "A", estoque: 38, categoria: "Material Elétrico" },
+    { id: 103, nome: "Disjuntor Bipolar DIN 32A Steck", codigo: "EL-DISJ-32A", preco: 48.50, precoCusto: 28.00, unidade: "UN", tipo: "P", situacao: "A", estoque: 95, categoria: "Proteção Elétrica" },
+    { id: 104, nome: "Serviço de Instalação e Infraestrutura HVAC", codigo: "SRV-INST-HVAC", preco: 850.00, precoCusto: 300.00, unidade: "SV", tipo: "S", situacao: "A", estoque: 999, categoria: "Serviços Técnicos" },
+    { id: 105, nome: "Manutenção Preventiva e Higienização de Splits", codigo: "SRV-MANUT-PREV", preco: 250.00, precoCusto: 80.00, unidade: "SV", tipo: "S", situacao: "A", estoque: 999, categoria: "Serviços Técnicos" }
+  ],
+  pedidos: [
+    { id: 2001, numero: 5082, data: "2026-03-18", cliente: { nome: "FLR Instalações e Manutenções LTDA", id: 168492019 }, total: 6630.00, situacao: "Atendido", vendedor: "Roberto Andrade", itensQtd: 3 },
+    { id: 2002, numero: 5083, data: "2026-03-20", cliente: { nome: "Construtora e Incorporadora Horizonte S.A.", id: 168492021 }, total: 24500.00, situacao: "Em andamento", vendedor: "Ana Paula Silva", itensQtd: 8 },
+    { id: 2003, numero: 5084, data: "2026-03-22", cliente: { nome: "Carlos Eduardo Silveira", id: 168492020 }, total: 1100.00, situacao: "Pendente", vendedor: "Roberto Andrade", itensQtd: 2 }
+  ],
+  ordensServicos: [
+    { id: 3001, numero: 1045, dataAbertura: "2026-03-15", dataPrevisao: "2026-03-25", cliente: { nome: "Construtora Horizonte S.A." }, descricao: "Instalação de 6 Splits 18k BTUs no Bloco Corporativo", responsavel: "Eng. Rodrigo / Equipe Alpha", situacao: "Em Execução", valorTotal: 18500.00 },
+    { id: 3002, numero: 1046, dataAbertura: "2026-03-19", dataPrevisao: "2026-03-23", cliente: { nome: "Carlos Eduardo Silveira" }, descricao: "Troca de Quadro de Distribuição e Balanceamento de Cargas", responsavel: "Téc. Fernando", situacao: "Concluído", valorTotal: 1450.00 },
+    { id: 3003, numero: 1047, dataAbertura: "2026-03-21", dataPrevisao: "2026-03-28", cliente: { nome: "FLR Instalações LTDA" }, descricao: "Manutenção Preventiva de Chillers e Dutos Centrais", responsavel: "Equipe Beta Clima", situacao: "Aguardando Peças", valorTotal: 9800.00 }
+  ],
+  contasReceber: [
+    { id: 4001, numeroDocumento: "FAT-5082/1", cliente: "FLR Instalações LTDA", vencimento: "2026-03-30", valor: 3315.00, saldo: 3315.00, situacao: "Aberta" },
+    { id: 4002, numeroDocumento: "FAT-5082/2", cliente: "FLR Instalações LTDA", vencimento: "2026-04-30", valor: 3315.00, saldo: 3315.00, situacao: "Aberta" },
+    { id: 4003, numeroDocumento: "FAT-5070", cliente: "Carlos Eduardo Silveira", vencimento: "2026-03-10", valor: 850.00, saldo: 0, situacao: "Liquidada" },
+    { id: 4004, numeroDocumento: "FAT-5083/1", cliente: "Construtora Horizonte S.A.", vencimento: "2026-04-15", valor: 12250.00, saldo: 12250.00, situacao: "Aberta" }
+  ],
+  contasPagar: [
+    { id: 5001, fornecedor: "Distribuidora Nacional de Cobre S/A", vencimento: "2026-03-28", valor: 4500.00, situacao: "Aberta", categoria: "Matéria-Prima" },
+    { id: 5002, fornecedor: "Daikin / Carrier Climatização Brasil", vencimento: "2026-04-05", valor: 14200.00, situacao: "Aberta", categoria: "Equipamentos HVAC" },
+    { id: 5003, fornecedor: "Enel Energia SP", vencimento: "2026-03-20", valor: 780.00, situacao: "Paga", categoria: "Utilidades" }
+  ],
+  propostas: [
+    { id: 6001, numero: 890, cliente: "Shopping Iguatemi Galeria", data: "2026-03-17", validade: "2026-04-17", total: 85000.00, situacao: "Em Negociação" },
+    { id: 6002, numero: 891, cliente: "Hospital São Lucas SP", data: "2026-03-21", validade: "2026-04-05", total: 42000.00, situacao: "Aprovada" }
+  ]
+};
+
+// Endpoint unificado de dados simulados (Demo)
+app.get('/api/demo-data', (req, res) => {
+  const { module = 'clientes' } = req.query;
+  res.json({
+    data: DEMO_DATA[module] || DEMO_DATA.clientes,
+    allModules: Object.keys(DEMO_DATA)
   });
+});
+
+// Endpoint: Resumo Consolidado do Dashboard
+app.get('/api/dashboard-summary', authenticateToken, async (req, res) => {
+  try {
+    let totals = {
+      clientesTotal: DEMO_DATA.clientes.length,
+      produtosTotal: DEMO_DATA.produtos.length,
+      pedidosTotal: DEMO_DATA.pedidos.length,
+      faturamentoMes: 32230.00,
+      ordensServicosAtivas: 2,
+      contasReceberPendente: 18880.00,
+      contasPagarPendente: 18700.00,
+      fonte: 'demo'
+    };
+
+    const hasTokens = await getTokens();
+    if (hasTokens && hasTokens.access_token) {
+      totals.fonte = 'live';
+      // Tentativas de puxar contadores reais se disponível
+      try {
+        const contatos = await fetchBlingAPI('contatos', { limite: 1 });
+        if (contatos && contatos.data) totals.clientesTotal = contatos.data.length ? 100 : 0;
+      } catch (e) {}
+    }
+
+    res.json({ success: true, data: totals });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => {

@@ -1168,12 +1168,71 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
       <!-- Sidebar Navigation -->
       <aside class="sidebar" id="sidebar">
         <nav class="sidebar-nav">
-          <div class="nav-section-title">MÓDULOS</div>
+          <a href="javascript:void(0)" class="nav-item active" id="navDashboard" onclick="switchERPView('dashboard')">
+            <i class="fa-solid fa-chart-pie text-blue"></i>
+            <span>Dashboard Geral</span>
+          </a>
+
+          <div class="nav-section-title">CADASTROS</div>
           
-          <a href="javascript:void(0)" class="nav-item active" id="navClients">
-            <i class="fa-solid fa-users"></i>
+          <a href="javascript:void(0)" class="nav-item" id="navClients" onclick="switchERPView('clients')">
+            <i class="fa-solid fa-users text-emerald"></i>
             <span>Clientes & Contatos</span>
             <span class="nav-badge" id="navClientsCount">0</span>
+          </a>
+
+          <a href="javascript:void(0)" class="nav-item" id="navProducts" onclick="switchERPView('products')">
+            <i class="fa-solid fa-boxes-stacked text-purple"></i>
+            <span>Produtos & Materiais</span>
+            <span class="nav-badge" id="navProductsCount">0</span>
+          </a>
+
+          <a href="javascript:void(0)" class="nav-item" id="navServices" onclick="switchERPView('services')">
+            <i class="fa-solid fa-screwdriver-wrench text-orange"></i>
+            <span>Catálogo de Serviços</span>
+          </a>
+
+          <div class="nav-section-title">VENDAS & COMERCIAL</div>
+
+          <a href="javascript:void(0)" class="nav-item" id="navOrders" onclick="switchERPView('orders')">
+            <i class="fa-solid fa-cart-shopping text-blue"></i>
+            <span>Pedidos de Venda</span>
+            <span class="nav-badge" id="navOrdersCount">0</span>
+          </a>
+
+          <a href="javascript:void(0)" class="nav-item" id="navProposals" onclick="switchERPView('proposals')">
+            <i class="fa-solid fa-file-signature text-purple"></i>
+            <span>Propostas / Orçamentos</span>
+          </a>
+
+          <a href="javascript:void(0)" class="nav-item" id="navNfe" onclick="switchERPView('nfe')">
+            <i class="fa-solid fa-receipt text-emerald"></i>
+            <span>Notas Fiscais (NF-e)</span>
+          </a>
+
+          <div class="nav-section-title">FINANCEIRO</div>
+
+          <a href="javascript:void(0)" class="nav-item" id="navReceivables" onclick="switchERPView('receivables')">
+            <i class="fa-solid fa-hand-holding-dollar text-emerald"></i>
+            <span>Contas a Receber</span>
+          </a>
+
+          <a href="javascript:void(0)" class="nav-item" id="navPayables" onclick="switchERPView('payables')">
+            <i class="fa-solid fa-money-bill-wave text-red"></i>
+            <span>Contas a Pagar</span>
+          </a>
+
+          <div class="nav-section-title">SERVIÇOS & OPERACIONAL</div>
+
+          <a href="javascript:void(0)" class="nav-item" id="navServiceOrders" onclick="switchERPView('serviceOrders')">
+            <i class="fa-solid fa-helmet-safety text-orange"></i>
+            <span>Ordens de Serviço (OS)</span>
+            <span class="nav-badge" id="navOsCount">0</span>
+          </a>
+
+          <a href="javascript:void(0)" class="nav-item" id="navStock" onclick="switchERPView('stock')">
+            <i class="fa-solid fa-warehouse text-blue"></i>
+            <span>Saldos de Estoque</span>
           </a>
 
           <!-- Painel Exclusivo de Gestão de Usuários (Superadmin) -->
@@ -1202,8 +1261,8 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
         <div class="sidebar-footer">
           <div class="sidebar-info-card">
             <div class="info-card-header">
-              <i class="fa-solid fa-database"></i>
-              <span>Banco Supabase</span>
+              <i class="fa-solid fa-database text-emerald"></i>
+              <span>Banco Supabase Ativo</span>
             </div>
             <p>Tabelas: <code>flrBling_*</code></p>
           </div>
@@ -1217,9 +1276,9 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
           <div class="breadcrumb-container">
             <span class="bc-item">Início</span>
             <i class="fa-solid fa-chevron-right bc-separator"></i>
-            <span class="bc-item">Cadastros</span>
+            <span class="bc-item" id="bcCategoryName">Módulo</span>
             <i class="fa-solid fa-chevron-right bc-separator"></i>
-            <span class="bc-item active">Clientes e Fornecedores</span>
+            <span class="bc-item active" id="bcViewName">Dashboard Geral</span>
           </div>
 
           <div class="header-actions">
@@ -1234,154 +1293,246 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
               </button>
             </div>
 
-            <button class="btn btn-secondary" id="btnRefreshData" title="Recarregar Lista">
+            <button class="btn btn-secondary" id="btnRefreshData" title="Recarregar Dados">
               <i class="fa-solid fa-arrows-rotate"></i>
               <span>Atualizar</span>
             </button>
           </div>
         </div>
 
-        <!-- Dashboard KPI Stats Bar -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon icon-blue">
-              <i class="fa-solid fa-user-group"></i>
+        <!-- VIEW 1: DASHBOARD GERAL & RESUMO EXECUTIVO -->
+        <div id="erpViewDashboard" class="erp-view-pane active">
+          <!-- KPI Stats Bar -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon icon-blue">
+                <i class="fa-solid fa-user-group"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Clientes Ativos</span>
+                <span class="stat-value" id="dashKpiClientes">0</span>
+              </div>
             </div>
-            <div class="stat-info">
-              <span class="stat-label">Total de Clientes</span>
-              <span class="stat-value" id="statTotalCount">0</span>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-green">
+                <i class="fa-solid fa-sack-dollar"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Faturamento do Mês</span>
+                <span class="stat-value text-emerald font-bold" id="dashKpiFaturamento">R$ 0,00</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-purple">
+                <i class="fa-solid fa-boxes-stacked"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Itens no Catálogo</span>
+                <span class="stat-value" id="dashKpiProdutos">0</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-orange">
+                <i class="fa-solid fa-helmet-safety"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Ordens de Serviço em Aberto</span>
+                <span class="stat-value" id="dashKpiOs">0</span>
+              </div>
             </div>
           </div>
 
-          <div class="stat-card">
-            <div class="stat-icon icon-green">
-              <i class="fa-solid fa-circle-check"></i>
+          <!-- Dashboard Highlights Cards -->
+          <div class="dashboard-widgets-grid mt-3">
+            <div class="widget-card">
+              <div class="widget-header">
+                <h4><i class="fa-solid fa-chart-line text-blue"></i> Acesso Rápido aos Módulos Bling</h4>
+              </div>
+              <div class="quick-modules-grid">
+                <button class="quick-module-btn" onclick="switchERPView('clients')">
+                  <i class="fa-solid fa-users text-emerald"></i>
+                  <span>Clientes</span>
+                </button>
+                <button class="quick-module-btn" onclick="switchERPView('orders')">
+                  <i class="fa-solid fa-cart-shopping text-blue"></i>
+                  <span>Pedidos Venda</span>
+                </button>
+                <button class="quick-module-btn" onclick="switchERPView('serviceOrders')">
+                  <i class="fa-solid fa-helmet-safety text-orange"></i>
+                  <span>Ordens Serviço</span>
+                </button>
+                <button class="quick-module-btn" onclick="switchERPView('products')">
+                  <i class="fa-solid fa-boxes-stacked text-purple"></i>
+                  <span>Produtos</span>
+                </button>
+                <button class="quick-module-btn" onclick="switchERPView('receivables')">
+                  <i class="fa-solid fa-hand-holding-dollar text-emerald"></i>
+                  <span>A Receber</span>
+                </button>
+                <button class="quick-module-btn" onclick="switchERPView('payables')">
+                  <i class="fa-solid fa-money-bill-wave text-red"></i>
+                  <span>A Pagar</span>
+                </button>
+              </div>
             </div>
-            <div class="stat-info">
-              <span class="stat-label">Cadastros Ativos</span>
-              <span class="stat-value" id="statActiveCount">0</span>
-            </div>
-          </div>
 
-          <div class="stat-card">
-            <div class="stat-icon icon-purple">
-              <i class="fa-solid fa-building"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-label">Pessoa Jurídica (PJ)</span>
-              <span class="stat-value" id="statPjCount">0</span>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon icon-orange">
-              <i class="fa-solid fa-user"></i>
-            </div>
-            <div class="stat-info">
-              <span class="stat-label">Pessoa Física (PF)</span>
-              <span class="stat-value" id="statPfCount">0</span>
+            <div class="widget-card">
+              <div class="widget-header">
+                <h4><i class="fa-solid fa-shield-halved text-emerald"></i> Status da Integração</h4>
+              </div>
+              <div class="integration-status-box">
+                <div class="status-row">
+                  <span>API Bling ERP v3:</span>
+                  <strong id="dashBlingStatusText" class="text-emerald">Conectado</strong>
+                </div>
+                <div class="status-row">
+                  <span>Banco Supabase:</span>
+                  <strong class="text-emerald">Online (flrBling_*)</strong>
+                </div>
+                <div class="status-row">
+                  <span>Autenticação OAuth:</span>
+                  <strong id="dashOAuthStatus">Centralizada via Token</strong>
+                </div>
+                <div class="status-row">
+                  <span>Servidor / Docker:</span>
+                  <strong>Node.js 20 LTS (Easypanel)</strong>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Filter & Control Panel -->
-        <div class="filters-card">
-          <div class="filter-group filter-search">
-            <label for="filterSearch">Filtrar por Termo</label>
-            <div class="input-with-icon">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="filterSearch" placeholder="Nome, Razão Social, CPF/CNPJ...">
+        <!-- VIEW 2: LISTAGEM UNIFICADA DE MÓDULOS (CLIENTES, PRODUTOS, PEDIDOS, OS, FINANCEIRO) -->
+        <div id="erpViewTable" class="erp-view-pane">
+          <!-- Dynamic KPI Bar -->
+          <div class="stats-grid" id="moduleDynamicStats">
+            <div class="stat-card">
+              <div class="stat-icon icon-blue">
+                <i class="fa-solid fa-list-check"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label" id="dynStatLabel1">Total de Registros</span>
+                <span class="stat-value" id="dynStatVal1">0</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-green">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label" id="dynStatLabel2">Ativos / Concluídos</span>
+                <span class="stat-value" id="dynStatVal2">0</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-purple">
+                <i class="fa-solid fa-calculator"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label" id="dynStatLabel3">Métrica Secundária</span>
+                <span class="stat-value" id="dynStatVal3">0</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-orange">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label" id="dynStatLabel4">Pendentes / Outros</span>
+                <span class="stat-value" id="dynStatVal4">0</span>
+              </div>
             </div>
           </div>
 
-          <div class="filter-group">
-            <label for="filterType">Tipo de Pessoa</label>
-            <select id="filterType">
-              <option value="">Todos os Tipos</option>
-              <option value="J">Pessoa Jurídica (PJ)</option>
-              <option value="F">Pessoa Física (PF)</option>
-              <option value="E">Estrangeiro</option>
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label for="filterSituation">Situação</label>
-            <select id="filterSituation">
-              <option value="">Todas as Situações</option>
-              <option value="A">Ativos</option>
-              <option value="I">Inativos</option>
-              <option value="S">Sem Movimentação</option>
-            </select>
-          </div>
-
-          <div class="filter-actions">
-            <button class="btn btn-secondary btn-icon" id="btnClearFilters" title="Limpar Filtros">
-              <i class="fa-solid fa-filter-circle-xmark"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- Data Grid Table Section -->
-        <div class="table-container">
-          <div class="table-header-info">
-            <div class="table-title">
-              <h3>Listagem de Clientes e Contatos</h3>
-              <span class="records-badge" id="recordsBadge">0 registros</span>
+          <!-- Filter & Control Panel -->
+          <div class="filters-card">
+            <div class="filter-group filter-search">
+              <label for="filterSearch">Buscar</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="filterSearch" placeholder="Pesquisar por termo, código ou descrição...">
+              </div>
             </div>
-            <div class="table-tools">
-              <span class="last-sync-text" id="lastSyncText">Última atualização: --:--:--</span>
+
+            <div class="filter-group">
+              <label for="filterType" id="lblFilterType">Filtro de Tipo</label>
+              <select id="filterType">
+                <option value="">Todos</option>
+              </select>
             </div>
-          </div>
 
-          <div class="table-responsive">
-            <table class="bling-table" id="clientsTable">
-              <thead>
-                <tr>
-                  <th style="width: 70px;">Código</th>
-                  <th>Nome / Razão Social</th>
-                  <th>Tipo</th>
-                  <th>CPF / CNPJ</th>
-                  <th>E-mail</th>
-                  <th>Telefone / Celular</th>
-                  <th>Cidade / UF</th>
-                  <th style="text-align: center;">Situação</th>
-                  <th style="text-align: right; width: 110px;">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="clientsTableBody">
-                <!-- Linhas inseridas dinamicamente via JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Loading State -->
-          <div class="table-loading-state" id="tableLoadingState">
-            <div class="spinner"></div>
-            <p>Consultando dados da API do Bling...</p>
-          </div>
-
-          <!-- Empty State -->
-          <div class="table-empty-state" id="tableEmptyState" style="display: none;">
-            <div class="empty-icon">
-              <i class="fa-solid fa-folder-open"></i>
+            <div class="filter-group">
+              <label for="filterSituation" id="lblFilterSituation">Situação / Status</label>
+              <select id="filterSituation">
+                <option value="">Todas</option>
+              </select>
             </div>
-            <h4>Nenhum cliente encontrado</h4>
-            <p id="emptyStateMessage">Verifique os filtros ou verifique a conexão com a API do Bling.</p>
-          </div>
 
-          <!-- Pagination Footer -->
-          <div class="table-pagination" id="tablePagination">
-            <div class="pagination-info" id="paginationInfo">
-              Mostrando 1 a 10 de 0 registros
-            </div>
-            <div class="pagination-controls">
-              <button class="page-btn" id="btnPrevPage" disabled>
-                <i class="fa-solid fa-chevron-left"></i>
+            <div class="filter-actions">
+              <button class="btn btn-secondary btn-icon" id="btnClearFilters" title="Limpar Filtros">
+                <i class="fa-solid fa-filter-circle-xmark"></i>
               </button>
-              <span class="page-current" id="currentPageNumber">Página 1</span>
-              <button class="page-btn" id="btnNextPage" disabled>
-                <i class="fa-solid fa-chevron-right"></i>
-              </button>
+            </div>
+          </div>
+
+          <!-- Data Grid Table Section -->
+          <div class="table-container">
+            <div class="table-header-info">
+              <div class="table-title">
+                <h3 id="moduleTableTitle">Listagem de Clientes e Contatos</h3>
+                <span class="records-badge" id="recordsBadge">0 registros</span>
+              </div>
+              <div class="table-tools">
+                <span class="last-sync-text" id="lastSyncText">Última atualização: --:--:--</span>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="bling-table" id="genericTable">
+                <thead id="genericTableHead">
+                  <!-- Inserido dinamicamente via JS de acordo com o módulo -->
+                </thead>
+                <tbody id="genericTableBody">
+                  <!-- Linhas inseridas dinamicamente via JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Loading State -->
+            <div class="table-loading-state" id="tableLoadingState">
+              <div class="spinner"></div>
+              <p>Consultando dados da API do Bling...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div class="table-empty-state" id="tableEmptyState" style="display: none;">
+              <div class="empty-icon">
+                <i class="fa-solid fa-folder-open"></i>
+              </div>
+              <h4>Nenhum registro encontrado</h4>
+              <p id="emptyStateMessage">Verifique os filtros ou verifique a conexão com a API do Bling.</p>
+            </div>
+
+            <!-- Pagination Footer -->
+            <div class="table-pagination" id="tablePagination">
+              <div class="pagination-info" id="paginationInfo">
+                Mostrando 1 a 10 de 0 registros
+              </div>
+              <div class="pagination-controls">
+                <button class="page-btn" id="btnPrevPage" disabled>
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span class="page-current" id="currentPageNumber">Página 1</span>
+                <button class="page-btn" id="btnNextPage" disabled>
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
