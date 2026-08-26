@@ -1,12 +1,45 @@
+# FLR Bling ERP - Hostinger & Apache Configuração de Produção
+# Zero dependência de Node.js no hPanel
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
-    # Redireciona chamadas /api para o processo Node.js na porta 3000 (caso mod_proxy esteja ativo)
-    RewriteRule ^api/(.*)$ http://127.0.0.1:3000/api/$1 [P,L]
+    # 0. Garante que o cabeçalho Authorization seja repassado ao PHP no Apache / Hostinger
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
-    # Fallback para rotas SPA se o arquivo não existir fisicamente
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    # 1. Roteia chamadas /api/... para o PHP nativo
+    RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+    RewriteRule ^api$ api/index.php [QSA,L]
+
+    # 2. Se o arquivo ou diretório existe fisicamente, serve diretamente
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 3. Fallback SPA: qualquer outra rota entrega o index.html
     RewriteRule ^ index.html [L]
+</IfModule>
+
+# Habilita repasse de autenticação CGI no Apache
+<IfModule mod_auth_basic.c>
+    CGIPassAuth On
+</IfModule>
+
+# Desativa listagem de diretórios para segurança
+Options -Indexes
+
+# Tipos MIME adequados
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType text/css .css
+    AddType image/svg+xml .svg
+    AddType application/json .json
+</IfModule>
+
+# Compressão GZIP / Deflate para velocidade de carregamento
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json
 </IfModule>

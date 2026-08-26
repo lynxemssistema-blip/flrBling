@@ -1,5 +1,6 @@
 /**
  * Script de Deploy Automático Simples via FTP/FTPS para a Hostinger
+ * Envia todos os arquivos compilados diretamente para a pasta public_html.
  * Execute com: npm run deploy
  */
 
@@ -7,6 +8,7 @@ require('dotenv').config();
 const ftp = require('basic-ftp');
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 async function deploy() {
   const host = process.env.FTP_HOST;
@@ -20,23 +22,24 @@ async function deploy() {
   console.log('======================================================\n');
 
   if (!host || !user || !password) {
-    console.error('❌ Configurações de FTP não encontradas no arquivo .env!\n');
-    console.log('Por favor, adicione as seguintes linhas ao seu arquivo .env:');
-    console.log('------------------------------------------------------');
-    console.log('FTP_HOST=ftp.flr.lynxems.com.br (ou IP da Hostinger)');
+    console.log('ℹ️ Para deploy direto via terminal, preencha o FTP no .env:');
+    console.log('FTP_HOST=seu_ip_ou_host');
     console.log('FTP_USER=seu_usuario_ftp');
     console.log('FTP_PASSWORD=sua_senha_ftp');
-    console.log('FTP_REMOTE_DIR=/public_html (ou pasta do seu domínio)');
-    console.log('FTP_SECURE=false');
-    console.log('------------------------------------------------------\n');
-    process.exit(1);
+    console.log('FTP_REMOTE_DIR=/public_html\n');
+    console.log('💡 DICA: Você também pode simplesmente fazer upload do arquivo "public_html.zip" pelo Gerenciador de Arquivos da Hostinger!');
+    return;
   }
+
+  // Garante que o build esteja atualizado
+  console.log('🔨 Compilando pacote mais recente...');
+  execSync('node build_hostinger.js', { stdio: 'inherit' });
 
   const client = new ftp.Client();
   client.ftp.verbose = false;
 
   try {
-    console.log(`🔌 Conectando ao servidor FTP: ${host}...`);
+    console.log(`\n🔌 Conectando ao servidor FTP: ${host}...`);
     await client.access({
       host: host,
       user: user,
@@ -49,38 +52,16 @@ async function deploy() {
     console.log(`📁 Navegando para o diretório remoto: ${remoteDir}...`);
     await client.ensureDir(remoteDir);
 
-    const filesToUpload = [
-      'server.js',
-      'supabaseClient.js',
-      'supabase_schema.sql',
-      'package.json',
-      'package-lock.json',
-      'ecosystem.config.js',
-      '.env'
-    ];
-
-    console.log('📤 Enviando arquivos principais do backend...');
-    for (const file of filesToUpload) {
-      const localFilePath = path.join(__dirname, file);
-      if (fs.existsSync(localFilePath)) {
-        await client.uploadFrom(localFilePath, file);
-        console.log(`  ✓ ${file}`);
-      }
-    }
-
-    console.log('\n📤 Enviando pasta do frontend (public/)...');
-    const localPublicDir = path.join(__dirname, 'public');
-    if (fs.existsSync(localPublicDir)) {
-      await client.uploadFromDir(localPublicDir, 'public');
-      console.log('  ✓ Pasta public/ (HTML, CSS, JS) enviada com sucesso!');
-    }
+    const prontoDir = path.join(__dirname, 'HOSTINGER_PRONTO');
+    console.log('📤 Enviando arquivos compilados da pasta HOSTINGER_PRONTO...');
+    await client.uploadFromDir(prontoDir, remoteDir);
 
     console.log('\n======================================================');
     console.log('🎉 DEPLOY CONCLUÍDO COM SUCESSO!');
-    console.log('🌐 Acesse seu app em: https://flr.lynxems.com.br/');
+    console.log('🌐 Acesse seu app no navegador!');
     console.log('======================================================\n');
   } catch (err) {
-    console.error('\n❌ Erro durante o deploy:', err.message);
+    console.error('\n❌ Erro durante o deploy FTP:', err.message);
   } finally {
     client.close();
   }

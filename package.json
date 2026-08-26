@@ -7,8 +7,8 @@
     "start": "node server.js",
     "dev": "node server.js",
     "deploy": "node deploy.js",
-    "build": "powershell.exe -Command \"Compress-Archive -Path 'server.js', 'supabaseClient.js', 'supabase_schema.sql', 'package.json', 'package-lock.json', 'ecosystem.config.js', '.env', 'public', 'DEPLOY_HOSTINGER.md', 'deploy.js' -DestinationPath 'bling-clientes-flr.zip' -Force\"",
-    "package": "npm run build"
+    "build": "node build_hostinger.js",
+    "package": "node build_hostinger.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",

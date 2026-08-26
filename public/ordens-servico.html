@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bling ERP | FLR Instalações & Clientes</title>
+  <title>Ordens de Serviço (OS) | Bling ERP FLR</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1017,7 +1017,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 }
   </style>
 </head>
-<body data-page="dashboard">
+<body data-page="serviceOrders">
 
   <!-- ==========================================================================
        1. LANDING PAGE (PÁGINA INICIAL DE APRESENTAÇÃO)
@@ -1240,7 +1240,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
       <!-- Sidebar Navigation -->
       <aside class="sidebar" id="sidebar">
         <nav class="sidebar-nav">
-          <a href="index.html" class="nav-item active" id="navDashboard">
+          <a href="index.html" class="nav-item" id="navDashboard">
             <i class="fa-solid fa-chart-pie text-blue"></i>
             <span>Dashboard Geral</span>
           </a>
@@ -1306,7 +1306,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 
           <div class="nav-section-title">SERVIÇOS & OPERACIONAL</div>
 
-          <a href="ordens-servico.html" class="nav-item" id="navServiceOrders">
+          <a href="ordens-servico.html" class="nav-item" id="navServiceOrders" class="nav-item active">
             <i class="fa-solid fa-helmet-safety text-orange"></i>
             <span>Ordens de Serviço (OS)</span>
             <span class="nav-badge" id="navOsCount">0</span>
@@ -1358,9 +1358,9 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
           <div class="breadcrumb-container">
             <span class="bc-item">Início</span>
             <i class="fa-solid fa-chevron-right bc-separator"></i>
-            <span class="bc-item" id="bcCategoryName">Módulo</span>
+            <span class="bc-item" id="bcCategoryName">Serviços & Operacional</span>
             <i class="fa-solid fa-chevron-right bc-separator"></i>
-            <span class="bc-item active" id="bcViewName">Dashboard Geral</span>
+            <span class="bc-item active" id="bcViewName">Ordens de Serviço (OS)</span>
           </div>
 
           <div class="header-actions">
@@ -1383,7 +1383,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
         </div>
 
         <!-- VIEW 1: DASHBOARD GERAL & RESUMO EXECUTIVO -->
-        <div id="erpViewDashboard" class="erp-view-pane active">
+        <div id="erpViewDashboard" class="erp-view-pane">
           <!-- KPI Stats Bar -->
           <div class="stats-grid">
             <div class="stat-card">
@@ -1515,7 +1515,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
         </div>
 
         <!-- VIEW 2: LISTAGEM UNIFICADA DE MÓDULOS (CLIENTES, PRODUTOS, PEDIDOS, OS, FINANCEIRO) -->
-        <div id="erpViewTable" class="erp-view-pane">
+        <div id="erpViewTable" class="erp-view-pane active">
           <!-- Dynamic KPI Bar -->
           <div class="stats-grid" id="moduleDynamicStats">
             <div class="stat-card">
@@ -1599,7 +1599,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
               </div>
               <div class="table-tools" style="display: flex; align-items: center; gap: 12px;">
                 <button class="btn btn-bling-primary btn-sm" id="btnOpenNewItemModal" onclick="openNewProductModal()" title="Cadastrar Novo Produto ou Serviço no Bling">
-                  <i class="fa-solid fa-plus"></i> <span id="lblNewItemBtn">Novo Produto</span>
+                  <i class="fa-solid fa-plus"></i> <span id="lblNewItemBtn">Nova Ordem de Serviço</span>
                 </button>
                 <span class="last-sync-text" id="lastSyncText">Última atualização: --:--:--</span>
               </div>

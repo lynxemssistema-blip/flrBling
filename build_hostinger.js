@@ -1,39 +1,30 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const rootDir = __dirname;
-const outputDir = path.join(rootDir, 'HOSTINGER_PRONTO');
+const publicSrc = path.join(rootDir, 'public');
+const publicHtmlDir = path.join(rootDir, 'public_html');
+const hostingerProntoDir = path.join(rootDir, 'HOSTINGER_PRONTO');
+const envSrc = path.join(rootDir, '.env');
+const tokensSrc = path.join(rootDir, 'tokens.json');
+const zipFile = path.join(rootDir, 'public_html.zip');
 
-console.log('🚀 Preparando pasta HOSTINGER_PRONTO...');
+console.log('====================================================');
+console.log('🚀 COMPILANDO E PREPARANDO PACOTE PARA PUBLICAÇÃO');
+console.log('====================================================\n');
 
-// Limpa/cria pasta de destino
-if (fs.existsSync(outputDir)) {
-  fs.rmSync(outputDir, { recursive: true, force: true });
+// 1. Sincroniza todas as 12 páginas HTML
+console.log('1️⃣ Sincronizando páginas HTML...');
+execSync('node generate_pages.js', { stdio: 'inherit' });
+
+if (!fs.existsSync(publicHtmlDir)) {
+  fs.mkdirSync(publicHtmlDir, { recursive: true });
 }
-fs.mkdirSync(outputDir, { recursive: true });
+if (!fs.existsSync(hostingerProntoDir)) {
+  fs.mkdirSync(hostingerProntoDir, { recursive: true });
+}
 
-// Copia arquivos raiz
-const filesToCopy = [
-  'server.js',
-  'supabaseClient.js',
-  'supabase_schema.sql',
-  'package.json',
-  'package-lock.json',
-  'ecosystem.config.js',
-  '.env',
-  'DEPLOY_HOSTINGER.md'
-];
-
-filesToCopy.forEach(file => {
-  const src = path.join(rootDir, file);
-  const dest = path.join(outputDir, file);
-  if (fs.existsSync(src)) {
-    fs.copyFileSync(src, dest);
-    console.log(`✓ Copiado: ${file}`);
-  }
-});
-
-// Copia pasta public completa
 function copyFolderRecursiveSync(source, target) {
   if (!fs.existsSync(target)) fs.mkdirSync(target, { recursive: true });
   const files = fs.readdirSync(source);
@@ -48,24 +39,38 @@ function copyFolderRecursiveSync(source, target) {
   });
 }
 
-const publicSrc = path.join(rootDir, 'public');
-const publicDest = path.join(outputDir, 'public');
-copyFolderRecursiveSync(publicSrc, publicDest);
-console.log('✓ Pasta public/ copiada com sucesso!');
+// 2. Copia todo o conteúdo da pasta public para public_html e HOSTINGER_PRONTO
+console.log('\n2️⃣ Sincronizando arquivos estáticos e API PHP...');
+copyFolderRecursiveSync(publicSrc, publicHtmlDir);
+copyFolderRecursiveSync(publicSrc, hostingerProntoDir);
+console.log('✓ Conteúdo de public/ sincronizado em public_html/ e HOSTINGER_PRONTO/');
 
-// Cria também cópia de index.html, css e js na raiz de HOSTINGER_PRONTO
-// Isso garante compatibilidade total caso você cole direto no public_html
-fs.copyFileSync(path.join(publicSrc, 'index.html'), path.join(outputDir, 'index.html'));
-copyFolderRecursiveSync(path.join(publicSrc, 'css'), path.join(outputDir, 'css'));
-copyFolderRecursiveSync(path.join(publicSrc, 'js'), path.join(outputDir, 'js'));
+// 3. Garante que .env e tokens.json estejam nos diretórios de deploy
+if (fs.existsSync(envSrc)) {
+  fs.copyFileSync(envSrc, path.join(publicHtmlDir, '.env'));
+  fs.copyFileSync(envSrc, path.join(hostingerProntoDir, '.env'));
+  console.log('✓ Copiado: .env');
+}
+if (fs.existsSync(tokensSrc)) {
+  fs.copyFileSync(tokensSrc, path.join(publicHtmlDir, 'tokens.json'));
+  fs.copyFileSync(tokensSrc, path.join(hostingerProntoDir, 'tokens.json'));
+  console.log('✓ Copiado: tokens.json');
+}
 
-// Cria um arquivo .htaccess para Node.js / Apache na Hostinger
-const htaccessContent = `PassengerEnabled on
-PassengerAppRoot /home/u123456789/public_html
-PassengerAppType node
-PassengerStartupFile server.js
-`;
-fs.writeFileSync(path.join(outputDir, '.htaccess'), htaccessContent);
+// 4. Cria o arquivo public_html.zip para upload direto
+console.log('\n3️⃣ Gerando pacote ZIP para upload na Hostinger (public_html.zip)...');
+try {
+  if (fs.existsSync(zipFile)) {
+    fs.unlinkSync(zipFile);
+  }
+  execSync(`powershell -Command "Compress-Archive -Path '${publicHtmlDir}\\*' -DestinationPath '${zipFile}' -Force"`, { stdio: 'ignore' });
+  console.log(`✓ Arquivo ZIP gerado com sucesso: ${zipFile}`);
+} catch (zipErr) {
+  console.warn('⚠️ Aviso ao gerar ZIP:', zipErr.message);
+}
 
-console.log('\n🎉 Pasta HOSTINGER_PRONTO criada com sucesso!');
-console.log(`📂 Caminho completo: ${outputDir}`);
+console.log('\n====================================================');
+console.log('🎉 COMPILAÇÃO CONCLUÍDA COM SUCESSO!');
+console.log('====================================================');
+console.log(`📁 Pasta pronta: ${publicHtmlDir}`);
+console.log(`📦 Arquivo ZIP para upload: ${zipFile}\n`);

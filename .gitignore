@@ -4,3 +4,5 @@ tokens.json
 .DS_Store
 npm-debug.log*
 *.log
+*.zip
+

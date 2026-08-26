@@ -249,91 +249,91 @@ function updateUserHeaderMeta() {
 // ==========================================================================
 function setupEventListeners() {
   // Landing Actions
-  elements.btnLandingLogin.addEventListener('click', () => openModal(elements.loginModal));
-  elements.btnHeroEnter.addEventListener('click', () => openModal(elements.loginModal));
-  elements.btnLandingRegister.addEventListener('click', () => openModal(elements.registerModal));
-  elements.btnHeroDemo.addEventListener('click', () => {
+  elements.btnLandingLogin?.addEventListener('click', () => openModal(elements.loginModal));
+  elements.btnHeroEnter?.addEventListener('click', () => openModal(elements.loginModal));
+  elements.btnLandingRegister?.addEventListener('click', () => openModal(elements.registerModal));
+  elements.btnHeroDemo?.addEventListener('click', () => {
     state.currentUser = { name: 'Visitante Demo', role: 'user', email: 'demo@flr.com.br' };
     state.dataSource = 'demo';
     showDashboard();
   });
 
   // Alternadores entre Login e Cadastro
-  elements.linkOpenRegister.addEventListener('click', () => {
+  elements.linkOpenRegister?.addEventListener('click', () => {
     closeModal(elements.loginModal);
     openModal(elements.registerModal);
   });
 
-  elements.linkOpenLogin.addEventListener('click', () => {
+  elements.linkOpenLogin?.addEventListener('click', () => {
     closeModal(elements.registerModal);
     openModal(elements.loginModal);
   });
 
   // Fechar Modais
-  elements.btnCloseLoginModal.addEventListener('click', () => closeModal(elements.loginModal));
-  elements.btnCloseRegisterModal.addEventListener('click', () => closeModal(elements.registerModal));
-  elements.btnCloseUsersModal.addEventListener('click', () => closeModal(elements.usersManagerModal));
-  elements.btnCloseUsersModalFooter.addEventListener('click', () => closeModal(elements.usersManagerModal));
+  elements.btnCloseLoginModal?.addEventListener('click', () => closeModal(elements.loginModal));
+  elements.btnCloseRegisterModal?.addEventListener('click', () => closeModal(elements.registerModal));
+  elements.btnCloseUsersModal?.addEventListener('click', () => closeModal(elements.usersManagerModal));
+  elements.btnCloseUsersModalFooter?.addEventListener('click', () => closeModal(elements.usersManagerModal));
 
   // Submissão de Formulários de Auth
-  elements.loginForm.addEventListener('submit', handleLogin);
-  elements.registerForm.addEventListener('submit', handleRegister);
-  elements.btnAppLogout.addEventListener('click', handleAppLogout);
+  elements.loginForm?.addEventListener('submit', handleLogin);
+  elements.registerForm?.addEventListener('submit', handleRegister);
+  elements.btnAppLogout?.addEventListener('click', handleAppLogout);
 
   // Gestão de Usuários (Superadmin)
-  elements.navOpenUsersManager.addEventListener('click', () => {
+  elements.navOpenUsersManager?.addEventListener('click', () => {
     loadUsersList();
     openModal(elements.usersManagerModal);
   });
 
   // Sidebar Toggle
-  elements.sidebarToggle.addEventListener('click', () => {
-    elements.sidebar.classList.toggle('collapsed');
+  elements.sidebarToggle?.addEventListener('click', () => {
+    elements.sidebar?.classList.toggle('collapsed');
   });
 
   // Modal Auth Bling
-  elements.btnOpenAuthModal.addEventListener('click', () => openModal(elements.authModal));
-  elements.navOpenSettings.addEventListener('click', () => openModal(elements.authModal));
-  elements.btnCloseAuthModal.addEventListener('click', () => closeModal(elements.authModal));
-  elements.btnCloseAuthModalFooter.addEventListener('click', () => closeModal(elements.authModal));
+  elements.btnOpenAuthModal?.addEventListener('click', () => openModal(elements.authModal));
+  elements.navOpenSettings?.addEventListener('click', () => openModal(elements.authModal));
+  elements.btnCloseAuthModal?.addEventListener('click', () => closeModal(elements.authModal));
+  elements.btnCloseAuthModalFooter?.addEventListener('click', () => closeModal(elements.authModal));
 
-  elements.btnExchangeCode.addEventListener('click', handleExchangeCode);
-  elements.btnSaveManualToken.addEventListener('click', handleSaveManualToken);
-  elements.btnLogoutToken.addEventListener('click', handleLogoutBling);
+  elements.btnExchangeCode?.addEventListener('click', handleExchangeCode);
+  elements.btnSaveManualToken?.addEventListener('click', handleSaveManualToken);
+  elements.btnLogoutToken?.addEventListener('click', handleLogoutBling);
 
   // Data source toggle
-  elements.btnSourceLive.addEventListener('click', () => setDataSource('live'));
-  elements.btnSourceDemo.addEventListener('click', () => setDataSource('demo'));
-  elements.btnRefreshData.addEventListener('click', () => loadClients());
+  elements.btnSourceLive?.addEventListener('click', () => setDataSource('live'));
+  elements.btnSourceDemo?.addEventListener('click', () => setDataSource('demo'));
+  elements.btnRefreshData?.addEventListener('click', () => loadClients());
 
   // Search and Filters
-  elements.filterSearch.addEventListener('input', (e) => {
+  elements.filterSearch?.addEventListener('input', (e) => {
     state.searchQuery = e.target.value.trim().toLowerCase();
-    elements.quickSearchInput.value = e.target.value;
+    if (elements.quickSearchInput) elements.quickSearchInput.value = e.target.value;
     applyFilters();
   });
 
-  elements.quickSearchInput.addEventListener('input', (e) => {
+  elements.quickSearchInput?.addEventListener('input', (e) => {
     state.searchQuery = e.target.value.trim().toLowerCase();
-    elements.filterSearch.value = e.target.value;
+    if (elements.filterSearch) elements.filterSearch.value = e.target.value;
     applyFilters();
   });
 
-  elements.filterType.addEventListener('change', (e) => {
+  elements.filterType?.addEventListener('change', (e) => {
     state.filterType = e.target.value;
     applyFilters();
   });
 
-  elements.filterSituation.addEventListener('change', (e) => {
+  elements.filterSituation?.addEventListener('change', (e) => {
     state.filterSituation = e.target.value;
     applyFilters();
   });
 
-  elements.btnClearFilters.addEventListener('click', () => {
-    elements.filterSearch.value = '';
-    elements.quickSearchInput.value = '';
-    elements.filterType.value = '';
-    elements.filterSituation.value = '';
+  elements.btnClearFilters?.addEventListener('click', () => {
+    if (elements.filterSearch) elements.filterSearch.value = '';
+    if (elements.quickSearchInput) elements.quickSearchInput.value = '';
+    if (elements.filterType) elements.filterType.value = '';
+    if (elements.filterSituation) elements.filterSituation.value = '';
     state.searchQuery = '';
     state.filterType = '';
     state.filterSituation = '';
@@ -341,14 +341,14 @@ function setupEventListeners() {
   });
 
   // Pagination
-  elements.btnPrevPage.addEventListener('click', () => {
+  elements.btnPrevPage?.addEventListener('click', () => {
     if (state.currentPage > 1) {
       state.currentPage--;
       renderTable();
     }
   });
 
-  elements.btnNextPage.addEventListener('click', () => {
+  elements.btnNextPage?.addEventListener('click', () => {
     const totalPages = Math.ceil(state.filteredClients.length / state.pageSize);
     if (state.currentPage < totalPages) {
       state.currentPage++;
@@ -357,9 +357,9 @@ function setupEventListeners() {
   });
 
   // Drawer
-  elements.btnCloseDrawer.addEventListener('click', closeDrawer);
-  elements.btnDrawerCloseFooter.addEventListener('click', closeDrawer);
-  elements.drawerOverlay.addEventListener('click', closeDrawer);
+  elements.btnCloseDrawer?.addEventListener('click', closeDrawer);
+  elements.btnDrawerCloseFooter?.addEventListener('click', closeDrawer);
+  elements.drawerOverlay?.addEventListener('click', closeDrawer);
 
   // Drawer Tabs
   const drawerTabs = document.querySelectorAll('.drawer-tab');
@@ -376,8 +376,8 @@ function setupEventListeners() {
   });
 
   // Copy JSON
-  elements.btnCopyJson.addEventListener('click', () => {
-    const jsonText = elements.detRawJson.textContent;
+  elements.btnCopyJson?.addEventListener('click', () => {
+    const jsonText = elements.detRawJson?.textContent || '{}';
     navigator.clipboard.writeText(jsonText).then(() => {
       showNotification('JSON copiado para a área de transferência!', 'success');
     });
@@ -390,10 +390,10 @@ function setupEventListeners() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeDrawer();
-      closeModal(elements.loginModal);
-      closeModal(elements.registerModal);
-      closeModal(elements.usersManagerModal);
-      closeModal(elements.authModal);
+      if (elements.loginModal) closeModal(elements.loginModal);
+      if (elements.registerModal) closeModal(elements.registerModal);
+      if (elements.usersManagerModal) closeModal(elements.usersManagerModal);
+      if (elements.authModal) closeModal(elements.authModal);
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
@@ -757,11 +757,11 @@ function applyFilters() {
 
 function renderTable() {
   const total = state.filteredClients.length;
-  elements.recordsBadge.textContent = `${total} registros`;
+  if (elements.recordsBadge) elements.recordsBadge.textContent = `${total} registros`;
 
   if (total === 0) {
-    elements.clientsTableBody.innerHTML = '';
-    elements.emptyStateMessage.textContent = 'Nenhum cliente atende aos critérios selecionados.';
+    if (elements.clientsTableBody) elements.clientsTableBody.innerHTML = '';
+    if (elements.emptyStateMessage) elements.emptyStateMessage.textContent = 'Nenhum cliente atende aos critérios selecionados.';
     showEmptyState(true);
     updatePagination(0);
     return;
@@ -773,7 +773,8 @@ function renderTable() {
   const endIdx = Math.min(startIdx + state.pageSize, total);
   const pageItems = state.filteredClients.slice(startIdx, endIdx);
 
-  elements.clientsTableBody.innerHTML = pageItems.map(client => {
+  if (elements.clientsTableBody) {
+    elements.clientsTableBody.innerHTML = pageItems.map(client => {
     const isPj = client.tipo === 'J';
     const tipoLabel = isPj ? 'PJ' : 'PF';
     const tipoClass = isPj ? 'pj' : 'pf';
@@ -812,28 +813,29 @@ function renderTable() {
         </td>
       </tr>
     `;
-  }).join('');
+    }).join('');
+  }
 
   updatePagination(total);
 }
 
 function updatePagination(total) {
   if (total === 0) {
-    elements.paginationInfo.textContent = 'Mostrando 0 de 0 registros';
-    elements.currentPageNumber.textContent = 'Página 1';
-    elements.btnPrevPage.disabled = true;
-    elements.btnNextPage.disabled = true;
+    if (elements.paginationInfo) elements.paginationInfo.textContent = 'Mostrando 0 de 0 registros';
+    if (elements.currentPageNumber) elements.currentPageNumber.textContent = 'Página 1';
+    if (elements.btnPrevPage) elements.btnPrevPage.disabled = true;
+    if (elements.btnNextPage) elements.btnNextPage.disabled = true;
     return;
   }
 
   const start = (state.currentPage - 1) * state.pageSize + 1;
   const end = Math.min(state.currentPage * state.pageSize, total);
-  const totalPages = Math.ceil(total / state.pageSize);
+  const totalPages = Math.ceil(total / state.pageSize) || 1;
 
-  elements.paginationInfo.textContent = `Mostrando ${start} a ${end} de ${total} registros`;
-  elements.currentPageNumber.textContent = `Página ${state.currentPage} de ${totalPages}`;
-  elements.btnPrevPage.disabled = state.currentPage <= 1;
-  elements.btnNextPage.disabled = state.currentPage >= totalPages;
+  if (elements.paginationInfo) elements.paginationInfo.textContent = `Mostrando ${start} a ${end} de ${total} registros`;
+  if (elements.currentPageNumber) elements.currentPageNumber.textContent = `Página ${state.currentPage} de ${totalPages}`;
+  if (elements.btnPrevPage) elements.btnPrevPage.disabled = state.currentPage <= 1;
+  if (elements.btnNextPage) elements.btnNextPage.disabled = state.currentPage >= totalPages;
 }
 
 // ==========================================================================

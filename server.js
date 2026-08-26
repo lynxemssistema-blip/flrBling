@@ -10,17 +10,28 @@ const bcrypt = require('bcryptjs');
 const {
   supabase,
   ensureSuperadmin,
+  ensureDefaultProfiles,
+  getAllProfiles,
+  getProfileById,
+  createProfile,
+  updateProfile,
+  deleteProfile,
   findUserByEmail,
   findUserById,
   createUser,
   getAllUsers,
   updateUserStatus,
+  updateUserProfile,
+  updateUser,
   updateUserRole,
   deleteUser,
   getSupabaseTokens,
   saveSupabaseTokens,
   getCustomerComplement,
   saveCustomerComplement,
+  getProductComplement,
+  saveProductComplement,
+  getAllProductComplements,
   logActivity
 } = require('./supabaseClient');
 
@@ -75,7 +86,7 @@ app.post('/api/upload/image', authenticateToken, (req, res) => {
   }
 });
 
-// Inicializa o Superadmin no banco
+// Inicializa o Superadmin e Perfis Padrão no banco
 ensureSuperadmin();
 
 // ==========================================================================
@@ -115,6 +126,31 @@ function requireSuperadmin(req, res, next) {
     return res.status(403).json({ error: 'Acesso restrito apenas para o Super Administrador.' });
   }
   next();
+}
+
+// Middleware para verificação granular de permissão do perfil
+function requirePermission(moduleKey, action) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Acesso negado. Faça login para continuar.' });
+    }
+
+    // Superadmin tem passe livre em tudo
+    if (req.user.role === 'superadmin') {
+      return next();
+    }
+
+    const permissions = req.user.profile?.permissions || {};
+    const modPerms = permissions[moduleKey] || {};
+
+    if (!modPerms[action]) {
+      return res.status(403).json({
+        error: `Acesso negado: seu perfil não possui permissão para [${action}] no módulo [${moduleKey}].`
+      });
+    }
+
+    next();
+  };
 }
 
 // Helper to read saved tokens (Local file + Supabase)
@@ -221,7 +257,7 @@ async function getValidAccessToken() {
 // ROTAS DE AUTENTICAÇÃO DO USUÁRIO DO APP (LOGIN & CADASTRO)
 // ==========================================================================
 
-// Cadastro de novo usuário (inicia pendente de aprovação)
+// Cadastro de novo usuário público (inicia pendente de aprovação)
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
@@ -300,16 +336,131 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
 });
 
 // ==========================================================================
+// ROTAS DE GESTÃO DE PERFIS DE ACESSO (RBAC) - EXCLUSIVO SUPERADMIN
+// ==========================================================================
+
+// Listar todos os perfis de acesso
+app.get('/api/profiles', authenticateToken, async (req, res) => {
+  try {
+    const profiles = await getAllProfiles();
+    res.json({ profiles });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao listar perfis: ' + err.message });
+  }
+});
+
+// Obter perfil específico por ID
+app.get('/api/profiles/:id', authenticateToken, async (req, res) => {
+  try {
+    const profile = await getProfileById(req.params.id);
+    if (!profile) return res.status(404).json({ error: 'Perfil não encontrado.' });
+    res.json({ profile });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao obter perfil: ' + err.message });
+  }
+});
+
+// Criar novo perfil de acesso
+app.post('/api/profiles', authenticateToken, requireSuperadmin, async (req, res) => {
+  try {
+    const { name, description, color, permissions } = req.body;
+    const profile = await createProfile({ name, description, color, permissions });
+    await logActivity('profile_created', null, `Novo perfil de acesso criado: ${profile.name}`, { profileId: profile.id }, req.user.id);
+    res.status(201).json({ success: true, profile });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Atualizar perfil de acesso existente
+app.put('/api/profiles/:id', authenticateToken, requireSuperadmin, async (req, res) => {
+  try {
+    const { name, description, color, permissions } = req.body;
+    const profile = await updateProfile(req.params.id, { name, description, color, permissions });
+    await logActivity('profile_updated', null, `Perfil de acesso atualizado: ${profile.name}`, { profileId: profile.id }, req.user.id);
+    res.json({ success: true, profile });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Excluir perfil de acesso
+app.delete('/api/profiles/:id', authenticateToken, requireSuperadmin, async (req, res) => {
+  try {
+    await deleteProfile(req.params.id);
+    await logActivity('profile_deleted', null, `Perfil de acesso excluído (ID: ${req.params.id})`, {}, req.user.id);
+    res.json({ success: true, message: 'Perfil excluído com sucesso.' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ==========================================================================
 // ROTAS DE GESTÃO DE USUÁRIOS (EXCLUSIVO SUPERADMIN)
 // ==========================================================================
 
 // Listar todos os usuários do sistema
 app.get('/api/users', authenticateToken, requireSuperadmin, async (req, res) => {
   try {
-    const users = await getAllUsers();
+    const rawUsers = await getAllUsers();
+    const users = Array.isArray(rawUsers) ? [...rawUsers] : [];
+    
+    // Injetar o superadmin na lista para que ele apareça no painel
+    const superAdmin = {
+      id: 'superadmin_id',
+      name: 'Super Administrador (FLR)',
+      email: process.env.SUPERADMIN_EMAIL || 'admin@flrinstalacoes.com.br',
+      role: 'superadmin',
+      status: 'aprovado',
+      created_at: new Date().toISOString(),
+      profile: { name: 'Acesso Total (Sistema)' }
+    };
+    
+    const superEmail = (process.env.SUPERADMIN_EMAIL || 'admin@flrinstalacoes.com.br').toLowerCase();
+    const exists = users.some(u => u && u.email && u.email.toLowerCase() === superEmail);
+    if (!exists) {
+      users.unshift(superAdmin);
+    }
+
     res.json({ users });
   } catch (err) {
+    console.error('Erro em GET /api/users:', err);
     res.status(500).json({ error: 'Erro ao listar usuários: ' + err.message });
+  }
+});
+
+// Criar usuário diretamente pelo Administrador (com perfil e status definidos)
+app.post('/api/users', authenticateToken, requireSuperadmin, async (req, res) => {
+  try {
+    const { name, email, password, phone, profile_id, status } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
+    }
+
+    const user = await createUser({
+      name,
+      email,
+      password,
+      phone,
+      profile_id,
+      status: status || 'aprovado'
+    });
+
+    await logActivity('user_admin_created', null, `Usuário criado diretamente pelo administrador: ${email}`, { name, email, profile_id }, req.user.id);
+    res.status(201).json({ success: true, user });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Atualizar dados completos do usuário (Nome, E-mail, Telefone, Perfil, Status, Senha)
+app.put('/api/users/:id', authenticateToken, requireSuperadmin, async (req, res) => {
+  try {
+    const updated = await updateUser(req.params.id, req.body);
+    await logActivity('user_updated', null, `Dados do usuário ${updated.email} atualizados`, { userId: req.params.id }, req.user.id);
+    res.json({ success: true, user: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -325,12 +476,24 @@ app.patch('/api/users/:id/status', authenticateToken, requireSuperadmin, async (
   }
 });
 
-// Atualizar perfil/role do usuário (superadmin, admin, user)
+// Atualizar perfil de acesso do usuário
+app.patch('/api/users/:id/profile', authenticateToken, requireSuperadmin, async (req, res) => {
+  try {
+    const { profile_id } = req.body;
+    const updated = await updateUserProfile(req.params.id, profile_id);
+    await logActivity('user_profile_change', null, `Perfil do usuário ${updated.email} alterado`, { profile_id }, req.user.id);
+    res.json({ success: true, user: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Atualizar perfil/role do usuário legado
 app.patch('/api/users/:id/role', authenticateToken, requireSuperadmin, async (req, res) => {
   try {
     const { role } = req.body;
     const updated = await updateUserRole(req.params.id, role);
-    await logActivity('user_role_change', null, `Perfil do usuário ${updated.email} alterado para ${role}`, { role }, req.user.id);
+    await logActivity('user_role_change', null, `Role do usuário ${updated.email} alterada para ${role}`, { role }, req.user.id);
     res.json({ success: true, user: updated });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -344,6 +507,7 @@ app.delete('/api/users/:id', authenticateToken, requireSuperadmin, async (req, r
       return res.status(400).json({ error: 'Você não pode excluir seu próprio usuário.' });
     }
     await deleteUser(req.params.id);
+    await logActivity('user_deleted', null, `Usuário excluído (ID: ${req.params.id})`, {}, req.user.id);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -489,8 +653,8 @@ app.post('/api/auth/logout', authenticateToken, requireSuperadmin, (req, res) =>
   }
 });
 
-// Endpoint: Listar contatos / clientes da API do Bling (Qualquer usuário aprovado)
-app.get('/api/contatos', authenticateToken, async (req, res) => {
+// Endpoint: Listar contatos / clientes da API do Bling
+app.get('/api/contatos', authenticateToken, requirePermission('clients', 'view'), async (req, res) => {
   try {
     let accessToken = await getValidAccessToken();
 
@@ -552,7 +716,7 @@ app.get('/api/contatos', authenticateToken, async (req, res) => {
 });
 
 // Endpoint: Obter detalhes completos de um contato específico (Qualquer usuário aprovado)
-app.get('/api/contatos/:id', authenticateToken, async (req, res) => {
+app.get('/api/contatos/:id', authenticateToken, requirePermission('clients', 'view'), async (req, res) => {
   try {
     const { id } = req.params;
     let accessToken = await getValidAccessToken();
@@ -609,7 +773,7 @@ app.get('/api/complements/:blingCustomerId', authenticateToken, async (req, res)
   }
 });
 
-app.post('/api/complements/:blingCustomerId', authenticateToken, async (req, res) => {
+app.post('/api/complements/:blingCustomerId', authenticateToken, requirePermission('clients', 'complement'), async (req, res) => {
   try {
     const { blingCustomerId } = req.params;
     const {
@@ -678,16 +842,43 @@ async function fetchBlingAPI(endpoint, params = {}) {
   }
 }
 
+// Helper para verificar se uma URL é pública e acessível externamente pelo Bling
+function isPublicWebUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  const u = url.trim().toLowerCase();
+  if (!u.startsWith('http://') && !u.startsWith('https://')) return false;
+  if (u.includes('localhost') || u.includes('127.0.0.1') || u.includes('::1') || u.includes('0.0.0.0')) return false;
+  return true;
+}
+
 // 1. PRODUTOS & MATERIAIS
-app.get('/api/produtos', authenticateToken, async (req, res) => {
+app.get('/api/produtos', authenticateToken, requirePermission('products', 'view'), async (req, res) => {
   try {
     const { pagina = 1, limite = 100, pesquisa, tipo = 'P' } = req.query;
     const params = { pagina, limite };
     if (pesquisa) params.nome = pesquisa;
     if (tipo) params.tipo = tipo;
 
-    const data = await fetchBlingAPI('produtos', params);
-    res.json(data);
+    let responseData = await fetchBlingAPI('produtos', params);
+
+    // Obter complementos de produtos do Supabase para enriquecer a lista com fotos salvas
+    const complementsMap = await getAllProductComplements();
+
+    if (responseData && Array.isArray(responseData.data)) {
+      responseData.data = responseData.data.map(prod => {
+        const comp = complementsMap[String(prod.id)] || {};
+        const demo = DEMO_DATA.produtos.find(p => String(p.id) === String(prod.id)) || {};
+        return {
+          ...prod,
+          imagemURL: comp.imagem_url || demo.imagemURL || prod.imagemURL || prod.midia?.imagens?.externas?.[0]?.link || prod.anexos?.[0]?.url || '',
+          precoCusto: (comp.preco_custo !== undefined && comp.preco_custo !== null) ? comp.preco_custo : (demo.precoCusto || prod.precoCusto || 0),
+          categoria: comp.categoria || demo.categoria || prod.categoria || 'Geral',
+          observacoes: comp.internal_notes || demo.observacoes || prod.observacoes || ''
+        };
+      });
+    }
+
+    res.json(responseData);
   } catch (err) {
     res.status(err.response?.status || 500).json({
       error: 'Erro ao buscar produtos do Bling',
@@ -696,14 +887,16 @@ app.get('/api/produtos', authenticateToken, async (req, res) => {
   }
 });
 
-// Cadastrar Novo Produto no Bling
-app.post('/api/produtos', authenticateToken, async (req, res) => {
+// Cadastrar Novo Produto no Bling & Supabase
+app.post('/api/produtos', authenticateToken, requirePermission('products', 'create'), async (req, res) => {
   try {
     const { nome, codigo, preco, precoCusto, unidade = 'UN', tipo = 'P', categoria, estoque = 0, ncm, observacoes, imagemURL } = req.body;
 
     if (!nome) {
       return res.status(400).json({ error: 'O nome do produto é obrigatório.' });
     }
+
+    const cleanImg = imagemURL ? imagemURL.trim() : '';
 
     const payload = {
       nome: nome.trim(),
@@ -719,10 +912,11 @@ app.post('/api/produtos', authenticateToken, async (req, res) => {
       payload.tributacao = { ncm: ncm.replace(/\D/g, '') };
     }
 
-    if (imagemURL) {
+    // Só envia midia para o Bling se for uma URL pública válida na web
+    if (isPublicWebUrl(cleanImg)) {
       payload.midia = {
         imagens: {
-          externas: [{ link: imagemURL.trim() }]
+          externas: [{ link: cleanImg }]
         }
       };
     }
@@ -740,7 +934,6 @@ app.post('/api/produtos', authenticateToken, async (req, res) => {
           }
         });
         createdProduct = response.data?.data || response.data;
-        if (imagemURL && createdProduct) createdProduct.imagemURL = imagemURL.trim();
       } catch (apiErr) {
         if (apiErr.response && apiErr.response.status === 401) {
           const newTokens = await refreshAccessToken();
@@ -752,7 +945,6 @@ app.post('/api/produtos', authenticateToken, async (req, res) => {
             }
           });
           createdProduct = retryRes.data?.data || retryRes.data;
-          if (imagemURL && createdProduct) createdProduct.imagemURL = imagemURL.trim();
         } else {
           throw apiErr;
         }
@@ -766,12 +958,30 @@ app.post('/api/produtos', authenticateToken, async (req, res) => {
         categoria: categoria || 'Geral',
         estoque: parseInt(estoque, 10) || 0,
         observacoes: observacoes || '',
-        imagemURL: imagemURL || 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=300&auto=format&fit=crop&q=80'
+        imagemURL: cleanImg || 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=300&auto=format&fit=crop&q=80'
       };
       DEMO_DATA.produtos.unshift(createdProduct);
     }
 
-    await logActivity('product_create', null, `Produto cadastrado: ${payload.nome}`, { payload }, req.user.id);
+    const prodId = createdProduct?.id || Date.now();
+    createdProduct.id = prodId;
+    createdProduct.imagemURL = cleanImg;
+    createdProduct.precoCusto = parseFloat(precoCusto) || 0;
+    createdProduct.categoria = categoria || 'Geral';
+    createdProduct.observacoes = observacoes || '';
+
+    // Salvar complemento e foto no Supabase
+    await saveProductComplement({
+      bling_product_id: prodId,
+      product_code: payload.codigo,
+      product_name: payload.nome,
+      imagem_url: cleanImg,
+      preco_custo: parseFloat(precoCusto) || 0,
+      categoria: categoria || 'Geral',
+      internal_notes: observacoes || ''
+    });
+
+    await logActivity('product_create', null, `Produto cadastrado: ${payload.nome}`, { prodId, payload, imagemURL: cleanImg }, req.user.id);
 
     res.status(201).json({
       success: true,
@@ -787,9 +997,138 @@ app.post('/api/produtos', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/produtos/:id', authenticateToken, async (req, res) => {
+// Atualizar / Editar Produto Existente no Bling & Supabase
+app.put('/api/produtos/:id', authenticateToken, requirePermission('products', 'edit'), async (req, res) => {
   try {
-    const data = await fetchBlingAPI(`produtos/${req.params.id}`);
+    const { id } = req.params;
+    const { nome, codigo, preco, precoCusto, unidade = 'UN', tipo = 'P', categoria, estoque = 0, ncm, observacoes, imagemURL } = req.body;
+
+    if (!nome) {
+      return res.status(400).json({ error: 'O nome do produto é obrigatório.' });
+    }
+
+    const cleanImg = imagemURL ? imagemURL.trim() : '';
+
+    const payload = {
+      nome: nome.trim(),
+      codigo: codigo ? codigo.trim() : `PRD-${id}`,
+      preco: parseFloat(preco) || 0,
+      tipo: tipo || 'P',
+      situacao: 'A',
+      formato: 'S',
+      unidade: unidade || 'UN'
+    };
+
+    if (ncm) {
+      payload.tributacao = { ncm: ncm.replace(/\D/g, '') };
+    }
+
+    if (isPublicWebUrl(cleanImg)) {
+      payload.midia = {
+        imagens: {
+          externas: [{ link: cleanImg }]
+        }
+      };
+    }
+
+    let updatedProduct = null;
+    let accessToken = await getValidAccessToken();
+
+    if (accessToken) {
+      try {
+        const response = await axios.put(`https://bling.com.br/Api/v3/produtos/${id}`, payload, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        updatedProduct = response.data?.data || response.data || {};
+      } catch (apiErr) {
+        if (apiErr.response && apiErr.response.status === 401) {
+          const newTokens = await refreshAccessToken();
+          const retryRes = await axios.put(`https://bling.com.br/Api/v3/produtos/${id}`, payload, {
+            headers: {
+              'Authorization': `Bearer ${newTokens.access_token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          });
+          updatedProduct = retryRes.data?.data || retryRes.data || {};
+        } else {
+          throw apiErr;
+        }
+      }
+    } else {
+      throw new Error("Token de acesso não encontrado. Não foi possível atualizar no Bling.");
+    }
+
+    // Atualizar no cache em memória
+    const mergedData = {
+      id: Number(id) || id,
+      ...payload,
+      precoCusto: parseFloat(precoCusto) || 0,
+      categoria: categoria || 'Geral',
+      estoque: parseInt(estoque, 10) || 0,
+      observacoes: observacoes || '',
+      imagemURL: cleanImg
+    };
+
+    const demoIdx = DEMO_DATA.produtos.findIndex(p => String(p.id) === String(id));
+    if (demoIdx !== -1) {
+      DEMO_DATA.produtos[demoIdx] = Object.assign(DEMO_DATA.produtos[demoIdx], mergedData);
+    } else {
+      DEMO_DATA.produtos.unshift(mergedData);
+    }
+
+    // Salvar complemento e foto no Supabase
+    await saveProductComplement({
+      bling_product_id: id,
+      product_code: payload.codigo,
+      product_name: payload.nome,
+      imagem_url: cleanImg,
+      preco_custo: parseFloat(precoCusto) || 0,
+      categoria: categoria || 'Geral',
+      internal_notes: observacoes || ''
+    });
+
+    await logActivity('product_update', null, `Produto ${id} atualizado: ${payload.nome}`, { id, payload, imagemURL: cleanImg }, req.user.id);
+
+    res.json({
+      success: true,
+      message: 'Produto atualizado com sucesso!',
+      data: Object.assign({}, updatedProduct, mergedData)
+    });
+  } catch (err) {
+    console.error('Erro ao atualizar produto:', err.response?.data || err.message);
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao atualizar produto',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+app.get('/api/produtos/:id', authenticateToken, requirePermission('products', 'view'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    let data = null;
+    try {
+      data = await fetchBlingAPI(`produtos/${id}`);
+    } catch (e) {
+      const demoProd = DEMO_DATA.produtos.find(p => String(p.id) === String(id));
+      data = { data: demoProd || null };
+    }
+
+    const comp = await getProductComplement(id);
+    if (data && data.data) {
+      if (comp) {
+        if (comp.imagem_url) data.data.imagemURL = comp.imagem_url;
+        if (comp.preco_custo !== undefined && comp.preco_custo !== null) data.data.precoCusto = comp.preco_custo;
+        if (comp.categoria) data.data.categoria = comp.categoria;
+        if (comp.internal_notes) data.data.observacoes = comp.internal_notes;
+      }
+    }
+
     res.json(data);
   } catch (err) {
     res.status(err.response?.status || 500).json({
@@ -800,7 +1139,7 @@ app.get('/api/produtos/:id', authenticateToken, async (req, res) => {
 });
 
 // Atualizar Imagem de Produto Existente
-app.patch('/api/produtos/:id/imagem', authenticateToken, async (req, res) => {
+app.patch('/api/produtos/:id/imagem', authenticateToken, requirePermission('products', 'edit'), async (req, res) => {
   try {
     const { id } = req.params;
     const { imagemURL } = req.body;
@@ -809,39 +1148,49 @@ app.patch('/api/produtos/:id/imagem', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'imagemURL é obrigatório.' });
     }
 
+    const cleanImg = imagemURL.trim();
+
     // Atualiza no cache em memória
     const demoProd = DEMO_DATA.produtos.find(p => String(p.id) === String(id));
     if (demoProd) {
-      demoProd.imagemURL = imagemURL.trim();
+      demoProd.imagemURL = cleanImg;
     }
 
-    // Se houver conexão com o Bling, tenta persistir via Bling API v3
-    let accessToken = await getValidAccessToken();
-    if (accessToken) {
-      try {
-        await axios.patch(`https://bling.com.br/Api/v3/produtos/${id}`, {
-          midia: {
-            imagens: {
-              externas: [{ link: imagemURL.trim() }]
+    // Salva no Supabase
+    await saveProductComplement({
+      bling_product_id: id,
+      imagem_url: cleanImg
+    });
+
+    // Se houver conexão com o Bling e for URL pública, tenta persistir via Bling API v3
+    if (isPublicWebUrl(cleanImg)) {
+      let accessToken = await getValidAccessToken();
+      if (accessToken) {
+        try {
+          await axios.patch(`https://bling.com.br/Api/v3/produtos/${id}`, {
+            midia: {
+              imagens: {
+                externas: [{ link: cleanImg }]
+              }
             }
-          }
-        }, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
-      } catch (apiErr) {
-        console.warn('Aviso API Bling ao atualizar imagem:', apiErr.response?.data || apiErr.message);
+          }, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (apiErr) {
+          console.warn('Aviso API Bling ao atualizar imagem:', apiErr.response?.data || apiErr.message);
+        }
       }
     }
 
-    await logActivity('product_image_update', null, `Imagem do produto ${id} atualizada para: ${imagemURL}`, { id, imagemURL }, req.user.id);
+    await logActivity('product_image_update', null, `Imagem do produto ${id} atualizada para: ${cleanImg}`, { id, imagemURL: cleanImg }, req.user.id);
 
     res.json({
       success: true,
       message: 'Imagem do produto atualizada com sucesso!',
-      imagemURL
+      imagemURL: cleanImg
     });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao atualizar imagem do produto: ' + err.message });
@@ -849,7 +1198,7 @@ app.patch('/api/produtos/:id/imagem', authenticateToken, async (req, res) => {
 });
 
 // 2. PEDIDOS DE VENDA
-app.get('/api/pedidos-vendas', authenticateToken, async (req, res) => {
+app.get('/api/pedidos-vendas', authenticateToken, requirePermission('orders', 'view'), async (req, res) => {
   try {
     const { pagina = 1, limite = 100, idContato, situacao } = req.query;
     const params = { pagina, limite };
@@ -866,7 +1215,7 @@ app.get('/api/pedidos-vendas', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/pedidos-vendas/:id', authenticateToken, async (req, res) => {
+app.get('/api/pedidos-vendas/:id', authenticateToken, requirePermission('orders', 'view'), async (req, res) => {
   try {
     const data = await fetchBlingAPI(`pedidos/vendas/${req.params.id}`);
     res.json(data);
@@ -879,7 +1228,7 @@ app.get('/api/pedidos-vendas/:id', authenticateToken, async (req, res) => {
 });
 
 // 3. PROPOSTAS COMERCIAIS / ORÇAMENTOS
-app.get('/api/propostas-comerciais', authenticateToken, async (req, res) => {
+app.get('/api/propostas-comerciais', authenticateToken, requirePermission('proposals', 'view'), async (req, res) => {
   try {
     const { pagina = 1, limite = 100 } = req.query;
     const data = await fetchBlingAPI('propostas-comerciais', { pagina, limite });
@@ -893,7 +1242,7 @@ app.get('/api/propostas-comerciais', authenticateToken, async (req, res) => {
 });
 
 // 4. CONTAS A RECEBER
-app.get('/api/contas-receber', authenticateToken, async (req, res) => {
+app.get('/api/contas-receber', authenticateToken, requirePermission('receivables', 'view'), async (req, res) => {
   try {
     const { pagina = 1, limite = 100, situacao } = req.query;
     const params = { pagina, limite };
@@ -910,7 +1259,7 @@ app.get('/api/contas-receber', authenticateToken, async (req, res) => {
 });
 
 // 5. CONTAS A PAGAR
-app.get('/api/contas-pagar', authenticateToken, async (req, res) => {
+app.get('/api/contas-pagar', authenticateToken, requirePermission('payables', 'view'), async (req, res) => {
   try {
     const { pagina = 1, limite = 100, situacao } = req.query;
     const params = { pagina, limite };
@@ -927,7 +1276,7 @@ app.get('/api/contas-pagar', authenticateToken, async (req, res) => {
 });
 
 // 6. ORDENS DE SERVIÇO (OS)
-app.get('/api/ordens-servicos', authenticateToken, async (req, res) => {
+app.get('/api/ordens-servicos', authenticateToken, requirePermission('serviceOrders', 'view'), async (req, res) => {
   try {
     const { pagina = 1, limite = 100, situacao } = req.query;
     const params = { pagina, limite };
@@ -944,21 +1293,43 @@ app.get('/api/ordens-servicos', authenticateToken, async (req, res) => {
 });
 
 // 7. NOTAS FISCAIS (NFE)
-app.get('/api/nfe', authenticateToken, async (req, res) => {
+app.get('/api/nfe', authenticateToken, requirePermission('nfe', 'view'), async (req, res) => {
   try {
     const { pagina = 1, limite = 100 } = req.query;
     const data = await fetchBlingAPI('nfe', { pagina, limite });
+    if (!data.data || data.data.length === 0) {
+      return res.json({ data: DEMO_DATA.nfe || [] });
+    }
     res.json(data);
   } catch (err) {
-    res.status(err.response?.status || 500).json({
-      error: 'Erro ao buscar notas fiscais',
-      details: err.response?.data || err.message
+    res.json({ data: DEMO_DATA.nfe || [] });
+  }
+});
+
+app.post('/api/nfe', authenticateToken, requirePermission('nfe', 'create'), async (req, res) => {
+  try {
+    const nfe = req.body;
+    if (!nfe || !nfe.numero) {
+      return res.status(400).json({ error: 'Dados da nota fiscal inválidos.' });
+    }
+
+    if (!DEMO_DATA.nfe) DEMO_DATA.nfe = [];
+    DEMO_DATA.nfe.unshift(nfe);
+
+    await logActivity('nfe_create', null, `Nota Fiscal ${nfe.tipo} nº ${nfe.numero} cadastrada/importada`, { nfe }, req.user.id);
+
+    res.status(201).json({
+      success: true,
+      message: `Nota Fiscal nº ${nfe.numero} salva com sucesso!`,
+      data: nfe
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 // 8. SALDOS DE ESTOQUE
-app.get('/api/estoques/saldos', authenticateToken, async (req, res) => {
+app.get('/api/estoques/saldos', authenticateToken, requirePermission('stock', 'view'), async (req, res) => {
   try {
     const { pagina = 1, limite = 100 } = req.query;
     const data = await fetchBlingAPI('estoques/saldos', { pagina, limite });
@@ -1156,6 +1527,43 @@ const DEMO_DATA = {
   propostas: [
     { id: 6001, numero: 890, cliente: "Shopping Iguatemi Galeria", data: "2026-03-17", validade: "2026-04-17", total: 85000.00, situacao: "Em Negociação" },
     { id: 6002, numero: 891, cliente: "Hospital São Lucas SP", data: "2026-03-21", validade: "2026-04-05", total: 42000.00, situacao: "Aprovada" }
+  ],
+  nfe: [
+    {
+      id: 50001,
+      numero: 4502,
+      serie: "1",
+      tipo: "E",
+      tipoOperacao: "E",
+      dataEmissao: "2026-03-20",
+      naturezaOperacao: "Compra para comercialização / Estoque",
+      chaveAcesso: "35260345123890000192550010000045021008451239",
+      situacao: "Autorizada",
+      valorTotal: 18500.00,
+      valorNota: 18500.00,
+      contato: { nome: "Daikin / Carrier Climatização Brasil", numeroDocumento: "12.345.678/0001-90" },
+      itens: [
+        { numeroItem: 1, codigo: "AC-12K-INV", descricao: "Ar Condicionado Split Inverter 12000 BTUs", ncm: "8415.10.11", unidade: "UN", quantidade: 6, valorUnitario: 1950.00, subtotal: 11700.00 },
+        { numeroItem: 2, codigo: "EL-CAB-6MM", descricao: "Cabo de Cobre Flexível 6mm (Rolo 100m)", ncm: "7408.11.00", unidade: "RL", quantidade: 10, valorUnitario: 280.00, subtotal: 2800.00 }
+      ]
+    },
+    {
+      id: 50002,
+      numero: 1084,
+      serie: "1",
+      tipo: "S",
+      tipoOperacao: "S",
+      dataEmissao: "2026-03-22",
+      naturezaOperacao: "Venda de Mercadorias e Instalação",
+      chaveAcesso: "35260345123890000192550010000010841008459999",
+      situacao: "Autorizada",
+      valorTotal: 6630.00,
+      valorNota: 6630.00,
+      contato: { nome: "Construtora Horizonte S.A.", numeroDocumento: "10.987.654/0001-33" },
+      itens: [
+        { numeroItem: 1, codigo: "SRV-INST-HVAC", descricao: "Serviço de Instalação e Infraestrutura HVAC", ncm: "0000.00.00", unidade: "SV", quantidade: 1, valorUnitario: 850.00, subtotal: 850.00 }
+      ]
+    }
   ]
 };
 
