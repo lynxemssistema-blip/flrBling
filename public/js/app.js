@@ -2137,6 +2137,74 @@ window.filterAdminUsersTable = function(query) {
   renderUsersTable();
 };
 
+function updateUserHeaderMeta() {
+  if (!state.currentUser) return;
+  const user = state.currentUser;
+  const elName = document.getElementById('userHeaderName');
+  const elRole = document.getElementById('userHeaderRole');
+  const elAvatar = document.getElementById('userHeaderAvatar');
+
+  if (elName) elName.textContent = user.name || 'Usuário';
+  if (elRole) {
+    const profName = user.profile?.name || (user.role === 'superadmin' ? 'Super Administrador' : 'Operador');
+    elRole.textContent = profName;
+  }
+  if (elAvatar) {
+    if (user.avatar_url) {
+      elAvatar.innerHTML = `<img src="${escapeHtml(user.avatar_url)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+    } else {
+      const initials = (user.name || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+      elAvatar.textContent = initials;
+    }
+  }
+}
+
+// Handlers de Upload de Foto do Usuário
+window.handleUserAvatarFileSelected = function(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    showNotification('A foto deve ter no máximo 5MB.', 'error');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64 = e.target.result;
+    const preview = document.getElementById('admUserAvatarPreview');
+    const placeholder = document.getElementById('admUserAvatarPlaceholder');
+    const btnRemove = document.getElementById('btnRemoveUserAvatar');
+    const inpUrl = document.getElementById('admUserAvatarUrl');
+
+    if (preview) {
+      preview.src = base64;
+      preview.style.display = 'block';
+    }
+    if (placeholder) placeholder.style.display = 'none';
+    if (btnRemove) btnRemove.style.display = 'inline-flex';
+    if (inpUrl) inpUrl.value = base64;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.removeUserAvatarPhoto = function() {
+  const preview = document.getElementById('admUserAvatarPreview');
+  const placeholder = document.getElementById('admUserAvatarPlaceholder');
+  const btnRemove = document.getElementById('btnRemoveUserAvatar');
+  const inpUrl = document.getElementById('admUserAvatarUrl');
+  const fileInput = document.getElementById('admUserAvatarFile');
+
+  if (preview) {
+    preview.src = '';
+    preview.style.display = 'none';
+  }
+  if (placeholder) placeholder.style.display = 'flex';
+  if (btnRemove) btnRemove.style.display = 'none';
+  if (inpUrl) inpUrl.value = '';
+  if (fileInput) fileInput.value = '';
+};
+
 function renderUsersTable() {
   if (!elements.usersTableBody) return;
 
@@ -2161,10 +2229,23 @@ function renderUsersTable() {
 
     const prof = user.profile || state.allProfiles.find(p => p.id === user.profile_id) || { name: (isSuper ? 'Super Administrador' : 'Padrão'), color: (isSuper ? '#E11D48' : '#1665D8') };
     const color = prof.color || '#1665D8';
+    const initials = (user.name || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+    const avatarHtml = user.avatar_url 
+      ? `<img src="${escapeHtml(user.avatar_url)}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border-color); flex-shrink: 0;">`
+      : `<div style="width: 36px; height: 36px; border-radius: 50%; background: ${color}20; color: ${color}; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; border: 1px solid ${color}40;">${initials}</div>`;
 
     return `
       <tr>
-        <td><strong>${escapeHtml(user.name)}</strong></td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            ${avatarHtml}
+            <div>
+              <strong>${escapeHtml(user.name)}</strong>
+              ${isSuper ? '<span style="display: block; font-size: 10px; color: #E11D48; font-weight: 700;">★ Mestre</span>' : ''}
+            </div>
+          </div>
+        </td>
         <td>${escapeHtml(user.email)}</td>
         <td><span class="text-mono">${escapeHtml(user.phone || '--')}</span></td>
         <td>
@@ -2174,7 +2255,7 @@ function renderUsersTable() {
         </td>
         <td style="text-align: center;"><span class="badge-status ${statusClass}">● ${statusLabel}</span></td>
         <td style="text-align: right;">
-          <button class="btn btn-secondary btn-xs" onclick="openUserModal('${user.id}')" title="Editar dados e perfil do usuário">
+          <button class="btn btn-secondary btn-xs" onclick="openUserModal('${user.id}')" title="Editar dados e foto do usuário">
             <i class="fa-solid fa-user-pen"></i> Editar
           </button>
           ${!isSuper ? `
@@ -2205,6 +2286,11 @@ window.openUserModal = function(userId = null) {
   const helpPass = document.getElementById('helpAdmUserPassword');
   const lblPass = document.getElementById('lblAdmUserPassword');
 
+  const preview = document.getElementById('admUserAvatarPreview');
+  const placeholder = document.getElementById('admUserAvatarPlaceholder');
+  const btnRemove = document.getElementById('btnRemoveUserAvatar');
+  const inpUrl = document.getElementById('admUserAvatarUrl');
+
   // Popula o select de perfis
   if (selectProfile) {
     selectProfile.innerHTML = state.allProfiles.map(p => `
@@ -2228,6 +2314,19 @@ window.openUserModal = function(userId = null) {
       }
       if (lblPass) lblPass.textContent = 'Nova Senha (Opcional)';
       if (helpPass) helpPass.style.display = 'block';
+
+      // Foto / Avatar
+      if (user.avatar_url) {
+        if (preview) {
+          preview.src = user.avatar_url;
+          preview.style.display = 'block';
+        }
+        if (placeholder) placeholder.style.display = 'none';
+        if (btnRemove) btnRemove.style.display = 'inline-flex';
+        if (inpUrl) inpUrl.value = user.avatar_url;
+      } else {
+        removeUserAvatarPhoto();
+      }
     }
   } else {
     if (title) title.innerHTML = `<i class="fa-solid fa-user-plus text-blue"></i> Cadastrar Novo Usuário`;
@@ -2242,6 +2341,7 @@ window.openUserModal = function(userId = null) {
     }
     if (lblPass) lblPass.textContent = 'Senha de Acesso *';
     if (helpPass) helpPass.style.display = 'none';
+    removeUserAvatarPhoto();
   }
 
   if (modal) openModal(modal);
@@ -2255,6 +2355,7 @@ window.handleSaveUser = async function() {
   const status = document.getElementById('admUserStatus').value;
   const profile_id = document.getElementById('admUserProfile').value;
   const password = document.getElementById('admUserPassword').value;
+  const avatar_url = document.getElementById('admUserAvatarUrl')?.value || null;
 
   if (!name || !email) {
     showNotification('Nome e e-mail são obrigatórios.', 'error');
@@ -2274,7 +2375,7 @@ window.handleSaveUser = async function() {
     const endpoint = isEditing ? `/api/users/${state.editingUserId}` : '/api/users';
     const method = isEditing ? 'PUT' : 'POST';
 
-    const payload = { name, email, phone, status, profile_id };
+    const payload = { name, email, phone, status, profile_id, avatar_url };
     if (password && password.trim()) payload.password = password.trim();
 
     const res = await fetch(endpoint, {

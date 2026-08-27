@@ -438,7 +438,7 @@ async function findUserByEmail(email) {
         const { data, error } = await supabase
           .from(TABLES.USERS)
           .select(`
-            id, name, email, password_hash, role, profile_id, status, phone, created_at, updated_at,
+            id, name, email, password_hash, role, profile_id, status, phone, avatar_url, created_at, updated_at,
             profile:flrBling_profiles (id, name, description, color, permissions)
           `)
           .eq('email', cleanEmail)
@@ -489,7 +489,7 @@ async function findUserById(id) {
         const { data, error } = await supabase
           .from(TABLES.USERS)
           .select(`
-            id, name, email, role, profile_id, status, phone, created_at, updated_at,
+            id, name, email, role, profile_id, status, phone, avatar_url, created_at, updated_at,
             profile:flrBling_profiles (id, name, description, color, permissions)
           `)
           .eq('id', id)
@@ -532,7 +532,7 @@ async function findUserById(id) {
   return null;
 }
 
-async function createUser({ name, email, password, phone, role = 'user', profile_id = null, status = 'pendente' }) {
+async function createUser({ name, email, password, phone, role = 'user', profile_id = null, status = 'pendente', avatar_url = null }) {
   const cleanEmail = email.trim().toLowerCase();
   const existing = await findUserByEmail(cleanEmail);
   if (existing) {
@@ -557,6 +557,7 @@ async function createUser({ name, email, password, phone, role = 'user', profile
     profile_id: assignedProfileId,
     status: status || 'pendente',
     phone: phone ? phone.trim() : null,
+    avatar_url: avatar_url ? avatar_url.trim() : null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
@@ -597,7 +598,7 @@ async function getAllUsers() {
         const { data, error } = await supabase
           .from(TABLES.USERS)
           .select(`
-            id, name, email, role, profile_id, status, phone, created_at, updated_at,
+            id, name, email, role, profile_id, status, phone, avatar_url, created_at, updated_at,
             profile:flrBling_profiles (id, name, description, color, permissions)
           `)
           .order('created_at', { ascending: false });
@@ -710,7 +711,7 @@ async function updateUserProfile(userId, profileId) {
   throw new Error('Usuário não encontrado.');
 }
 
-async function updateUser(userId, { name, email, phone, profile_id, status, password }) {
+async function updateUser(userId, { name, email, phone, profile_id, status, password, avatar_url }) {
   const user = await findUserById(userId);
   if (!user) throw new Error('Usuário não encontrado.');
 
@@ -720,6 +721,7 @@ async function updateUser(userId, { name, email, phone, profile_id, status, pass
   if (name && name.trim()) updates.name = name.trim();
   if (email && email.trim()) updates.email = email.trim().toLowerCase();
   if (phone !== undefined) updates.phone = phone ? phone.trim() : null;
+  if (avatar_url !== undefined) updates.avatar_url = avatar_url ? avatar_url.trim() : null;
   if (status) updates.status = status;
   if (profile_id) {
     updates.profile_id = profile_id;
@@ -742,7 +744,7 @@ async function updateUser(userId, { name, email, phone, profile_id, status, pass
         .update(updates)
         .eq('id', userId)
         .select(`
-          id, name, email, role, profile_id, status, phone, created_at, updated_at,
+          id, name, email, role, profile_id, status, phone, avatar_url, created_at, updated_at,
           profile:flrBling_profiles (id, name, description, color, permissions)
         `)
         .single();

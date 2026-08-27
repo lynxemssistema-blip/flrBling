@@ -1871,6 +1871,31 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
       <form id="formAdminUser" onsubmit="event.preventDefault(); handleSaveUser();">
         <div class="modal-body">
           <input type="hidden" id="adminUserId">
+          
+          <!-- Seção de Foto / Avatar do Usuário -->
+          <div class="user-avatar-selector-box" style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 12px 16px; background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 8px;">
+            <div class="user-avatar-preview-wrap" style="position: relative; width: 68px; height: 68px; min-width: 68px;">
+              <img id="admUserAvatarPreview" src="" style="width: 68px; height: 68px; border-radius: 50%; object-fit: cover; border: 2px solid var(--bling-blue); display: none;">
+              <div id="admUserAvatarPlaceholder" style="width: 68px; height: 68px; border-radius: 50%; background: #EBF3FC; color: #1665D8; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; border: 2px dashed #93C5FD;">
+                <i class="fa-solid fa-user"></i>
+              </div>
+            </div>
+            <div style="flex: 1;">
+              <label style="font-weight: 600; font-size: 13px; margin-bottom: 4px; display: block;">Foto do Usuário (Avatar)</label>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-xs" id="btnChooseUserAvatar" onclick="document.getElementById('admUserAvatarFile').click()">
+                  <i class="fa-solid fa-camera"></i> Escolher Foto do Computador
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs text-danger" id="btnRemoveUserAvatar" style="display: none;" onclick="removeUserAvatarPhoto()">
+                  <i class="fa-solid fa-trash"></i> Remover Foto
+                </button>
+              </div>
+              <input type="file" id="admUserAvatarFile" accept="image/*" style="display: none;" onchange="handleUserAvatarFileSelected(event)">
+              <input type="hidden" id="admUserAvatarUrl">
+              <span class="text-muted" style="font-size: 11px; display: block; margin-top: 4px;">PNG, JPG ou WebP (máx. 5MB)</span>
+            </div>
+          </div>
+
           <div class="form-grid-2">
             <div class="form-group col-2">
               <label for="admUserName">Nome Completo *</label>

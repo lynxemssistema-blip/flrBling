@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS "flrBling_users" (
     profile_id UUID REFERENCES "flrBling_profiles"(id) ON DELETE SET NULL,
     status TEXT DEFAULT 'pendente', -- 'aprovado', 'pendente', 'bloqueado'
     phone TEXT,
+    avatar_url TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
