@@ -87,6 +87,19 @@ CREATE TABLE IF NOT EXISTS "flrBling_activity_logs" (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ==========================================================================
+-- MIGRAÇÃO AUTOMÁTICA: Adiciona colunas faltantes caso as tabelas já existam
+-- ==========================================================================
+ALTER TABLE IF EXISTS "flrBling_users" ADD COLUMN IF NOT EXISTS "role" TEXT DEFAULT 'user';
+ALTER TABLE IF EXISTS "flrBling_users" ADD COLUMN IF NOT EXISTS "profile_id" UUID REFERENCES "flrBling_profiles"(id) ON DELETE SET NULL;
+ALTER TABLE IF EXISTS "flrBling_users" ADD COLUMN IF NOT EXISTS "status" TEXT DEFAULT 'pendente';
+ALTER TABLE IF EXISTS "flrBling_users" ADD COLUMN IF NOT EXISTS "phone" TEXT;
+ALTER TABLE IF EXISTS "flrBling_users" ADD COLUMN IF NOT EXISTS "avatar_url" TEXT;
+
+ALTER TABLE IF EXISTS "flrBling_product_complements" ADD COLUMN IF NOT EXISTS "preco_custo" NUMERIC(15,2) DEFAULT 0;
+ALTER TABLE IF EXISTS "flrBling_product_complements" ADD COLUMN IF NOT EXISTS "categoria" TEXT;
+ALTER TABLE IF EXISTS "flrBling_product_complements" ADD COLUMN IF NOT EXISTS "imagem_url" TEXT;
+
 -- Índices de Alta Performance
 CREATE INDEX IF NOT EXISTS "idx_flrBling_profiles_name" ON "flrBling_profiles" (name);
 CREATE INDEX IF NOT EXISTS "idx_flrBling_users_email" ON "flrBling_users" (email);
@@ -105,12 +118,23 @@ ALTER TABLE "flrBling_customer_complements" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "flrBling_product_complements" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "flrBling_activity_logs" ENABLE ROW LEVEL SECURITY;
 
--- Políticas de Acesso
+-- Políticas de Acesso Idempotentes
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_profiles" ON "flrBling_profiles";
 CREATE POLICY "Permitir acesso total flrBling_profiles" ON "flrBling_profiles" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_users" ON "flrBling_users";
 CREATE POLICY "Permitir acesso total flrBling_users" ON "flrBling_users" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_tokens" ON "flrBling_tokens";
 CREATE POLICY "Permitir acesso total flrBling_tokens" ON "flrBling_tokens" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_customer_complements" ON "flrBling_customer_complements";
 CREATE POLICY "Permitir acesso total flrBling_customer_complements" ON "flrBling_customer_complements" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_product_complements" ON "flrBling_product_complements";
 CREATE POLICY "Permitir acesso total flrBling_product_complements" ON "flrBling_product_complements" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_activity_logs" ON "flrBling_activity_logs";
 CREATE POLICY "Permitir acesso total flrBling_activity_logs" ON "flrBling_activity_logs" FOR ALL USING (true);
 
 -- ==========================================================================
