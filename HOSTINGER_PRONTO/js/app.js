@@ -1518,6 +1518,59 @@ async function saveCurrentClientComplement() {
 // CONFIGURAÇÃO DOS EVENT LISTENERS GERAIS
 // ==========================================================================
 function setupEventListeners() {
+  // SPA Seamless Navigation (Troca instantânea de módulo sem recarregar a página e sem flash)
+  const navLinksMap = {
+    'navDashboard': 'dashboard',
+    'navClients': 'clients',
+    'navProducts': 'products',
+    'navServices': 'services',
+    'navCategories': 'categories',
+    'navOrders': 'orders',
+    'navProposals': 'proposals',
+    'navSellers': 'sellers',
+    'navNfe': 'nfe',
+    'navReceivables': 'receivables',
+    'navPayables': 'payables',
+    'navServiceOrders': 'serviceOrders',
+    'navStock': 'stock'
+  };
+
+  Object.entries(navLinksMap).forEach(([navId, modKey]) => {
+    const el = document.getElementById(navId);
+    if (el) {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        const href = el.getAttribute('href');
+        if (href && href !== '#' && !href.startsWith('javascript:')) {
+          window.history.pushState({ module: modKey }, '', href);
+        }
+        window.switchERPView(modKey);
+      });
+    }
+  });
+
+  // Suporte aos botões voltar/avançar do navegador (History API)
+  window.addEventListener('popstate', (e) => {
+    const path = window.location.pathname.replace(/^\//, '') || 'index.html';
+    const pageToMod = {
+      'clientes.html': 'clients',
+      'produtos.html': 'products',
+      'servicos.html': 'services',
+      'categorias.html': 'categories',
+      'pedidos.html': 'orders',
+      'propostas.html': 'proposals',
+      'vendedores.html': 'sellers',
+      'nfe.html': 'nfe',
+      'contas-receber.html': 'receivables',
+      'contas-pagar.html': 'payables',
+      'ordens-servico.html': 'serviceOrders',
+      'estoque.html': 'stock',
+      'index.html': 'dashboard'
+    };
+    const mod = pageToMod[path] || (e.state && e.state.module) || 'dashboard';
+    window.switchERPView(mod);
+  });
+
   // Landing Actions
   elements.btnLandingLogin?.addEventListener('click', () => openModal(elements.loginModal));
   elements.btnHeroEnter?.addEventListener('click', () => openModal(elements.loginModal));

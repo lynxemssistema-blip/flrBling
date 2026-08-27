@@ -10,6 +10,18 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="/css/style.css">
+  <script>
+    // Anti-Flicker Instant Auth Check: impede que a Landing Page apareça se o usuário já estiver autenticado
+    try {
+      if (localStorage.getItem('flr_auth_token')) {
+        document.documentElement.classList.add('is-auth-ready');
+      }
+    } catch(e) {}
+  </script>
+  <style>
+    html.is-auth-ready #landingPageView { display: none !important; }
+    html.is-auth-ready #dashboardView { display: flex !important; }
+  </style>
   <style>
 /* ==========================================================================
    BLING ERP - EMBEDDED COMPLETE STYLES
