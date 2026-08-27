@@ -290,7 +290,42 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
     }
 
-    const user = await findUserByEmail(email);
+    const cleanEmail = email.trim().toLowerCase();
+    const superEmail = (process.env.SUPERADMIN_EMAIL || 'admin@flrinstalacoes.com.br').trim().toLowerCase();
+    const superPass = process.env.SUPERADMIN_PASSWORD || 'AdminFLR@2026';
+
+    // 1. Verificação direta do Super Administrador mestre (.env)
+    if (cleanEmail === superEmail && password === superPass) {
+      const superUser = {
+        id: 'superadmin_id',
+        name: 'Super Administrador (FLR)',
+        email: cleanEmail,
+        role: 'superadmin',
+        status: 'aprovado',
+        profile: {
+          id: '00000000-0000-0000-0000-000000000001',
+          name: 'Super Administrador',
+          description: 'Acesso total e irrestrito.',
+          is_system: true,
+          color: '#E11D48'
+        }
+      };
+
+      const token = jwt.sign(
+        { id: superUser.id, email: superUser.email, role: superUser.role },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      return res.json({
+        success: true,
+        token,
+        user: superUser
+      });
+    }
+
+    // 2. Verificação de usuários cadastrados no Supabase / Banco
+    const user = await findUserByEmail(cleanEmail);
     if (!user) {
       return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
     }
@@ -326,6 +361,7 @@ app.post('/api/auth/login', async (req, res) => {
       user: safeUser
     });
   } catch (err) {
+    console.error('Erro no login:', err);
     res.status(500).json({ error: 'Erro no login: ' + err.message });
   }
 });
