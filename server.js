@@ -103,7 +103,43 @@ async function authenticateToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await findUserById(decoded.id);
+    
+    let user = null;
+    if (decoded.id === 'superadmin_id' || decoded.role === 'superadmin') {
+      user = {
+        id: 'superadmin_id',
+        name: 'Super Administrador (FLR)',
+        email: decoded.email || process.env.SUPERADMIN_EMAIL || 'admin@flrinstalacoes.com.br',
+        role: 'superadmin',
+        status: 'aprovado',
+        profile: {
+          id: '00000000-0000-0000-0000-000000000001',
+          name: 'Super Administrador',
+          description: 'Acesso total e irrestrito.',
+          is_system: true,
+          color: '#E11D48',
+          permissions: {
+            dashboard: { view: true },
+            clients: { view: true, create: true, edit: true, delete: true, complement: true },
+            products: { view: true, create: true, edit: true, delete: true },
+            services: { view: true, create: true, edit: true, delete: true },
+            categories: { view: true, create: true, edit: true, delete: true },
+            orders: { view: true, create: true, edit: true, delete: true },
+            proposals: { view: true, create: true, edit: true, delete: true },
+            sellers: { view: true, create: true, edit: true, delete: true },
+            nfe: { view: true, create: true, import_xml: true, delete: true },
+            serviceOrders: { view: true, create: true, edit: true, delete: true },
+            receivables: { view: true, create: true, edit: true, delete: true },
+            payables: { view: true, create: true, edit: true, delete: true },
+            stock: { view: true, adjust: true },
+            users_admin: { manage_users: true, manage_profiles: true },
+            bling_settings: { manage_connection: true }
+          }
+        }
+      };
+    } else {
+      user = await findUserById(decoded.id);
+    }
 
     if (!user) {
       return res.status(401).json({ error: 'Usuário não encontrado.' });
