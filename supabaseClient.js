@@ -25,7 +25,10 @@ const TABLES = {
   TOKENS: 'flrBling_tokens',
   COMPLEMENTS: 'flrBling_customer_complements',
   PRODUCT_COMPLEMENTS: 'flrBling_product_complements',
-  LOGS: 'flrBling_activity_logs'
+  LOGS: 'flrBling_activity_logs',
+  KITS: 'flrBling_kits',
+  KIT_ITEMS: 'flrBling_kit_items',
+  QUOTES: 'flrBling_quotes'
 };
 
 // Permissões Padrão para os Perfis do Sistema
@@ -1023,5 +1026,237 @@ module.exports = {
   getProductComplement,
   saveProductComplement,
   getAllProductComplements,
-  logActivity
+  logActivity,
+  // Kits
+  getAllKits,
+  getKitById,
+  saveKit,
+  deleteKit,
+  // Orçamentos
+  getAllQuotes,
+  getQuoteById,
+  saveQuote,
+  updateQuote,
+  updateQuoteBlingSync,
+  generateQuoteNumber
 };
+
+// ==========================================================================
+// FUNÇÕES: GESTÃO DE KITS DE PRODUTOS
+// ==========================================================================
+
+async function getAllKits({ apenasAtivos = false } = {}) {
+  if (!supabase) return [];
+  try {
+    let query = supabase
+      .from(TABLES.KITS)
+      .select(`*, itens:${TABLES.KIT_ITEMS}(*)`)
+      .order('created_at', { ascending: false });
+    if (apenasAtivos) query = query.eq('ativo', true);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Erro ao buscar kits:', err.message);
+    return [];
+  }
+}
+
+async function getKitById(id) {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.KITS)
+      .select(`*, itens:${TABLES.KIT_ITEMS}(*)`)
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Erro ao buscar kit:', err.message);
+    return null;
+  }
+}
+
+async function saveKit(kitData, userId = null) {
+  if (!supabase) throw new Error('Supabase não disponível');
+  const { id, itens = [], ...fields } = kitData;
+  const now = new Date().toISOString();
+
+  // Upsert no cabeçalho do kit
+  const kitPayload = { ...fields, updated_at: now };
+  if (!id) {
+    kitPayload.created_by = userId;
+    kitPayload.created_at = now;
+  }
+
+  let kitId = id;
+  if (id) {
+    const { data, error } = await supabase
+      .from(TABLES.KITS)
+      .update(kitPayload)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    kitId = data.id;
+  } else {
+    const { data, error } = await supabase
+      .from(TABLES.KITS)
+      .insert(kitPayload)
+      .select()
+      .single();
+    if (error) throw error;
+    kitId = data.id;
+  }
+
+  // Substituir todos os itens (delete + insert)
+  await supabase.from(TABLES.KIT_ITEMS).delete().eq('kit_id', kitId);
+  if (itens.length > 0) {
+    const itemsToInsert = itens.map((it, idx) => ({
+      kit_id: kitId,
+      bling_product_id: it.bling_product_id || null,
+      product_code: it.product_code || '',
+      product_name: it.product_name || '',
+      product_unit: it.product_unit || 'UN',
+      quantity: parseFloat(it.quantity) || 1,
+      unit_price: parseFloat(it.unit_price) || 0,
+      imagem_url: it.imagem_url || null,
+      sort_order: idx
+    }));
+    const { error: itemsErr } = await supabase.from(TABLES.KIT_ITEMS).insert(itemsToInsert);
+    if (itemsErr) throw itemsErr;
+  }
+
+  return getKitById(kitId);
+}
+
+async function deleteKit(id) {
+  if (!supabase) throw new Error('Supabase não disponível');
+  const { error } = await supabase
+    .from(TABLES.KITS)
+    .update({ ativo: false, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+  return true;
+}
+
+// ==========================================================================
+// FUNÇÕES: GESTÃO DE ORÇAMENTOS
+// ==========================================================================
+
+async function generateQuoteNumber() {
+  if (!supabase) return `ORC-${Date.now()}`;
+  try {
+    const year = new Date().getFullYear();
+    const prefix = `ORC-${year}-`;
+    const { data } = await supabase
+      .from(TABLES.QUOTES)
+      .select('numero')
+      .ilike('numero', `${prefix}%`)
+      .order('numero', { ascending: false })
+      .limit(1);
+    let seq = 1;
+    if (data && data.length > 0) {
+      const lastNum = parseInt(data[0].numero.replace(prefix, ''), 10);
+      if (!isNaN(lastNum)) seq = lastNum + 1;
+    }
+    return `${prefix}${String(seq).padStart(3, '0')}`;
+  } catch {
+    return `ORC-${Date.now()}`;
+  }
+}
+
+async function getAllQuotes({ status, contactId, limit = 100, offset = 0 } = {}) {
+  if (!supabase) return [];
+  try {
+    let query = supabase
+      .from(TABLES.QUOTES)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (status) query = query.eq('status', status);
+    if (contactId) query = query.eq('bling_contact_id', contactId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Erro ao buscar orçamentos:', err.message);
+    return [];
+  }
+}
+
+async function getQuoteById(id) {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from(TABLES.QUOTES)
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Erro ao buscar orçamento:', err.message);
+    return null;
+  }
+}
+
+async function saveQuote(quoteData, userId = null) {
+  if (!supabase) throw new Error('Supabase não disponível');
+  const now = new Date().toISOString();
+  const payload = { ...quoteData, updated_at: now };
+  if (!payload.id) {
+    payload.created_by = userId;
+    payload.created_at = now;
+    if (!payload.numero) payload.numero = await generateQuoteNumber();
+    const { data, error } = await supabase
+      .from(TABLES.QUOTES)
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  } else {
+    const { id, ...updateFields } = payload;
+    const { data, error } = await supabase
+      .from(TABLES.QUOTES)
+      .update(updateFields)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+}
+
+async function updateQuote(id, fields) {
+  if (!supabase) throw new Error('Supabase não disponível');
+  const { data, error } = await supabase
+    .from(TABLES.QUOTES)
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function updateQuoteBlingSync(id, { blingPedidoId, blingPropostaId, tipo }) {
+  if (!supabase) throw new Error('Supabase não disponível');
+  const update = {
+    bling_exportado_em: new Date().toISOString(),
+    bling_export_tipo: tipo,
+    updated_at: new Date().toISOString()
+  };
+  if (blingPedidoId) update.bling_pedido_id = blingPedidoId;
+  if (blingPropostaId) update.bling_proposta_id = blingPropostaId;
+  const { data, error } = await supabase
+    .from(TABLES.QUOTES)
+    .update(update)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}

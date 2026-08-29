@@ -32,7 +32,17 @@ const {
   getProductComplement,
   saveProductComplement,
   getAllProductComplements,
-  logActivity
+  logActivity,
+  getAllKits,
+  getKitById,
+  saveKit,
+  deleteKit,
+  getAllQuotes,
+  getQuoteById,
+  saveQuote,
+  updateQuote,
+  updateQuoteBlingSync,
+  generateQuoteNumber
 } = require('./supabaseClient');
 
 const app = express();
@@ -1404,7 +1414,249 @@ app.get('/api/propostas-comerciais', authenticateToken, requirePermission('propo
   }
 });
 
-// 4. CONTAS A RECEBER
+// ==========================================================================
+// 4. KITS DE PRODUTOS (Supabase)
+// ==========================================================================
+
+// Listar Kits
+app.get('/api/kits', authenticateToken, async (req, res) => {
+  try {
+    const { apenasAtivos } = req.query;
+    const kits = await getAllKits({ apenasAtivos: apenasAtivos === 'true' });
+    res.json({ data: kits });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar kits: ' + err.message });
+  }
+});
+
+// Detalhe de um Kit
+app.get('/api/kits/:id', authenticateToken, async (req, res) => {
+  try {
+    const kit = await getKitById(req.params.id);
+    if (!kit) return res.status(404).json({ error: 'Kit não encontrado.' });
+    res.json({ data: kit });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar kit: ' + err.message });
+  }
+});
+
+// Criar ou Atualizar Kit
+app.post('/api/kits', authenticateToken, async (req, res) => {
+  try {
+    const kit = await saveKit(req.body, req.user?.id);
+    await logActivity('kit_created', null, `Kit criado: ${kit.nome}`, {}, req.user?.id);
+    res.status(201).json({ success: true, data: kit });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao salvar kit: ' + err.message });
+  }
+});
+
+app.put('/api/kits/:id', authenticateToken, async (req, res) => {
+  try {
+    const kit = await saveKit({ ...req.body, id: req.params.id }, req.user?.id);
+    await logActivity('kit_updated', null, `Kit atualizado: ${kit.nome}`, {}, req.user?.id);
+    res.json({ success: true, data: kit });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao atualizar kit: ' + err.message });
+  }
+});
+
+// Soft-delete de Kit
+app.delete('/api/kits/:id', authenticateToken, async (req, res) => {
+  try {
+    await deleteKit(req.params.id);
+    res.json({ success: true, message: 'Kit desativado com sucesso.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao desativar kit: ' + err.message });
+  }
+});
+
+// ==========================================================================
+// 5. ORÇAMENTOS / FAST QUOTE BUILDER (Supabase + Bling Export)
+// ==========================================================================
+
+// Listar Orçamentos
+app.get('/api/orcamentos', authenticateToken, async (req, res) => {
+  try {
+    const { status, contactId, limit, offset } = req.query;
+    const quotes = await getAllQuotes({
+      status, contactId,
+      limit: parseInt(limit) || 100,
+      offset: parseInt(offset) || 0
+    });
+    res.json({ data: quotes });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar orçamentos: ' + err.message });
+  }
+});
+
+// Detalhe de um Orçamento
+app.get('/api/orcamentos/:id', authenticateToken, async (req, res) => {
+  try {
+    const quote = await getQuoteById(req.params.id);
+    if (!quote) return res.status(404).json({ error: 'Orçamento não encontrado.' });
+    res.json({ data: quote });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar orçamento: ' + err.message });
+  }
+});
+
+// Criar Orçamento
+app.post('/api/orcamentos', authenticateToken, async (req, res) => {
+  try {
+    const quote = await saveQuote(req.body, req.user?.id);
+    await logActivity('quote_created', null, `Orçamento criado: ${quote.numero}`, {}, req.user?.id);
+    res.status(201).json({ success: true, data: quote });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao salvar orçamento: ' + err.message });
+  }
+});
+
+// Atualizar Orçamento
+app.put('/api/orcamentos/:id', authenticateToken, async (req, res) => {
+  try {
+    const quote = await saveQuote({ ...req.body, id: req.params.id }, req.user?.id);
+    res.json({ success: true, data: quote });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao atualizar orçamento: ' + err.message });
+  }
+});
+
+// Cancelar / Remover Orçamento
+app.delete('/api/orcamentos/:id', authenticateToken, async (req, res) => {
+  try {
+    await updateQuote(req.params.id, { status: 'cancelado' });
+    res.json({ success: true, message: 'Orçamento cancelado.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao cancelar orçamento: ' + err.message });
+  }
+});
+
+// ==========================================================================
+// EXPORTAR ORÇAMENTO PARA O BLING (Pedido de Venda ou Proposta Comercial)
+// ==========================================================================
+app.post('/api/orcamentos/:id/exportar-bling', authenticateToken, async (req, res) => {
+  try {
+    const { destino = 'pedido' } = req.body; // 'pedido' | 'proposta'
+    const quote = await getQuoteById(req.params.id);
+    if (!quote) return res.status(404).json({ error: 'Orçamento não encontrado.' });
+    if (quote.status !== 'aprovado') {
+      return res.status(400).json({ error: 'Somente orçamentos com status "aprovado" podem ser exportados.' });
+    }
+
+    const accessToken = await getValidAccessToken();
+    if (!accessToken) {
+      return res.status(401).json({ error: 'Integração com o Bling não conectada. Autorize o aplicativo primeiro.' });
+    }
+
+    // DESMEMBRAMENTO: Expandir kits nos seus produtos individuais
+    const itensExpandidos = [];
+    const itens = quote.itens || [];
+
+    for (const item of itens) {
+      if (item.tipo === 'kit' && item.itens_kit && item.itens_kit.length > 0) {
+        // Kit: desmembrar cada produto do kit
+        const qtdKit = parseFloat(item.quantidade) || 1;
+        const totalKitPrice = parseFloat(item.preco_total) || 0;
+        const totalKitBase = item.itens_kit.reduce((s, ki) => s + (ki.quantity * ki.unit_price), 0);
+
+        for (const ki of item.itens_kit) {
+          const fatorProporcional = totalKitBase > 0 ? (ki.quantity * ki.unit_price) / totalKitBase : 0;
+          const precoUnitarioAjustado = totalKitBase > 0
+            ? (totalKitPrice * fatorProporcional) / (ki.quantity * qtdKit)
+            : ki.unit_price;
+
+          itensExpandidos.push({
+            codigo: ki.product_code || '',
+            descricao: ki.product_name,
+            unidade: ki.product_unit || 'UN',
+            quantidade: ki.quantity * qtdKit,
+            valor: parseFloat(precoUnitarioAjustado.toFixed(4)),
+            ...(ki.bling_product_id ? { produto: { id: ki.bling_product_id } } : {})
+          });
+        }
+      } else {
+        // Produto avulso
+        itensExpandidos.push({
+          codigo: item.codigo || '',
+          descricao: item.descricao || item.nome || 'Item',
+          unidade: item.unidade || 'UN',
+          quantidade: parseFloat(item.quantidade) || 1,
+          valor: parseFloat(item.preco_unitario) || 0,
+          ...(item.bling_product_id ? { produto: { id: item.bling_product_id } } : {})
+        });
+      }
+    }
+
+    // Montar payload para a API v3 do Bling
+    const contatoPayload = quote.bling_contact_id
+      ? { contato: { id: quote.bling_contact_id } }
+      : { contato: { nome: quote.bling_contact_nome || 'Cliente' } };
+
+    let blingResponse;
+
+    if (destino === 'pedido') {
+      const payload = {
+        ...contatoPayload,
+        data: quote.data_emissao || new Date().toISOString().split('T')[0],
+        itens: itensExpandidos,
+        observacoes: quote.observacoes || '',
+        desconto: {
+          tipo: '%',
+          valor: parseFloat(quote.desconto_pct) || 0
+        },
+        transporte: {
+          frete: parseFloat(quote.frete) || 0
+        }
+      };
+      blingResponse = await axios.post('https://bling.com.br/Api/v3/pedidos/vendas', payload, {
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }
+      });
+    } else {
+      const payload = {
+        ...contatoPayload,
+        dataEmissao: quote.data_emissao || new Date().toISOString().split('T')[0],
+        dataValidade: quote.data_validade,
+        itens: itensExpandidos,
+        observacoes: quote.observacoes || '',
+        desconto: parseFloat(quote.desconto_pct) || 0
+      };
+      blingResponse = await axios.post('https://bling.com.br/Api/v3/propostas-comerciais', payload, {
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }
+      });
+    }
+
+    const blingData = blingResponse.data?.data || blingResponse.data;
+    const blingId = blingData?.id;
+
+    // Salvar referência do Bling no Supabase
+    await updateQuoteBlingSync(quote.id, {
+      blingPedidoId: destino === 'pedido' ? blingId : undefined,
+      blingPropostaId: destino === 'proposta' ? blingId : undefined,
+      tipo: destino
+    });
+    // Atualiza status para 'exportado'
+    await updateQuote(quote.id, { status: 'aprovado' });
+
+    await logActivity('quote_exported', null,
+      `Orçamento ${quote.numero} exportado como ${destino} para o Bling (ID: ${blingId})`, {}, req.user?.id);
+
+    res.json({
+      success: true,
+      message: `Orçamento exportado com sucesso para o Bling como ${destino === 'pedido' ? 'Pedido de Venda' : 'Proposta Comercial'}!`,
+      bling_id: blingId,
+      destino
+    });
+  } catch (err) {
+    console.error('Erro ao exportar para o Bling:', err.response?.data || err.message);
+    res.status(err.response?.status || 500).json({
+      error: 'Erro ao exportar orçamento para o Bling',
+      details: err.response?.data || err.message
+    });
+  }
+});
+
+// 6. CONTAS A RECEBER
 app.get('/api/contas-receber', authenticateToken, requirePermission('receivables', 'view'), async (req, res) => {
   try {
     const { pagina = 1, limite = 100, situacao } = req.query;

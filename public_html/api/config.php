@@ -472,6 +472,9 @@ function fetch_bling_api($endpoint, $params = [], $method = 'GET', $body = null)
     if ($res['code'] === 401) {
         $newTokens = refresh_bling_token();
         $res = $makeRequest($newTokens['access_token']);
+    } elseif ($res['code'] === 429) {
+        usleep(450000); // Aguarda 450ms em caso de limite de requisições do Bling (3 req/s)
+        $res = $makeRequest($accessToken);
     }
 
     if ($res['code'] >= 200 && $res['code'] < 300) {

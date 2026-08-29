@@ -628,7 +628,6 @@ try {
     }
 
     if ($segments[0] === 'dashboard-summary' && $method === 'GET') {
-        $user = authenticate_user();
         $totals = [
             'clientesTotal' => count($DEMO_DATA['clientes']),
             'produtosTotal' => count($DEMO_DATA['produtos']),
@@ -641,6 +640,7 @@ try {
         ];
 
         try {
+            $user = authenticate_user();
             $tokens = get_saved_tokens();
             if ($tokens && !empty($tokens['access_token'])) {
                 $totals['fonte'] = 'live';
@@ -649,7 +649,9 @@ try {
                     if (!empty($contatos['data'])) $totals['clientesTotal'] = 100;
                 } catch (Exception $e) {}
             }
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+            // Se usuário ainda não autenticado, retorna métricas padrão sem erro 500
+        }
 
         json_response(['success' => true, 'data' => $totals]);
     }
@@ -1258,6 +1260,243 @@ try {
             json_response($data);
         } catch (Exception $e) {
             json_response(['data' => []]);
+        }
+    }
+
+    // 22. GESTÃO DE KITS DE PRODUTOS
+    if ($segments[0] === 'kits') {
+        $user = authenticate_user();
+        
+        // GET /api/kits
+        if (count($segments) === 1 && $method === 'GET') {
+            $apenasAtivos = isset($_GET['apenasAtivos']) && $_GET['apenasAtivos'] === 'true';
+            $filter = $apenasAtivos ? "ativo=eq.true&" : "";
+            $res = supabase_fetch("flrBling_kits?{$filter}select=*,itens:flrBling_kit_items(*)&order=created_at.desc");
+            json_response(['data' => is_array($res) ? $res : []]);
+        }
+
+        // POST /api/kits
+        if (count($segments) === 1 && $method === 'POST') {
+            $body = get_json_input();
+            if (empty($body['nome'])) {
+                json_response(['error' => 'Nome do kit é obrigatório'], 400);
+            }
+            $itens = isset($body['itens']) ? $body['itens'] : [];
+            unset($body['itens']);
+            $body['created_at'] = date('c');
+            $body['updated_at'] = date('c');
+
+            $kitRes = supabase_fetch("flrBling_kits", 'POST', [$body], ['Prefer: return=representation']);
+            $kit = isset($kitRes[0]) ? $kitRes[0] : $kitRes;
+            $kitId = isset($kit['id']) ? $kit['id'] : null;
+
+            if ($kitId && !empty($itens)) {
+                $itemsToInsert = array_map(function($it) use ($kitId) {
+                    return [
+                        'kit_id' => $kitId,
+                        'bling_product_id' => !empty($it['bling_product_id']) ? intval($it['bling_product_id']) : null,
+                        'product_code' => isset($it['product_code']) ? $it['product_code'] : null,
+                        'product_name' => $it['product_name'],
+                        'product_unit' => isset($it['product_unit']) ? $it['product_unit'] : 'UN',
+                        'quantity' => floatval(isset($it['quantity']) ? $it['quantity'] : 1),
+                        'unit_price' => floatval(isset($it['unit_price']) ? $it['unit_price'] : 0),
+                        'created_at' => date('c')
+                    ];
+                }, $itens);
+                supabase_fetch("flrBling_kit_items", 'POST', $itemsToInsert);
+            }
+
+            log_activity('kit_create', null, "Kit '{$body['nome']}' cadastrado", ['kit' => $kit], $user['id']);
+            json_response(['success' => true, 'data' => $kit], 201);
+        }
+
+        // PUT /api/kits/:id
+        if (count($segments) === 2 && $method === 'PUT') {
+            $id = $segments[1];
+            $body = get_json_input();
+            $itens = isset($body['itens']) ? $body['itens'] : null;
+            unset($body['itens']);
+            $body['updated_at'] = date('c');
+
+            supabase_fetch("flrBling_kits?id=eq." . urlencode($id), 'PATCH', $body);
+
+            if ($itens !== null) {
+                supabase_fetch("flrBling_kit_items?kit_id=eq." . urlencode($id), 'DELETE');
+                if (!empty($itens)) {
+                    $itemsToInsert = array_map(function($it) use ($id) {
+                        return [
+                            'kit_id' => $id,
+                            'bling_product_id' => !empty($it['bling_product_id']) ? intval($it['bling_product_id']) : null,
+                            'product_code' => isset($it['product_code']) ? $it['product_code'] : null,
+                            'product_name' => $it['product_name'],
+                            'product_unit' => isset($it['product_unit']) ? $it['product_unit'] : 'UN',
+                            'quantity' => floatval(isset($it['quantity']) ? $it['quantity'] : 1),
+                            'unit_price' => floatval(isset($it['unit_price']) ? $it['unit_price'] : 0),
+                            'created_at' => date('c')
+                        ];
+                    }, $itens);
+                    supabase_fetch("flrBling_kit_items", 'POST', $itemsToInsert);
+                }
+            }
+
+            log_activity('kit_update', null, "Kit atualizado (ID: {$id})", [], $user['id']);
+            json_response(['success' => true]);
+        }
+
+        // DELETE /api/kits/:id
+        if (count($segments) === 2 && $method === 'DELETE') {
+            $id = $segments[1];
+            supabase_fetch("flrBling_kits?id=eq." . urlencode($id), 'PATCH', ['ativo' => false, 'updated_at' => date('c')]);
+            log_activity('kit_delete', null, "Kit desativado (ID: {$id})", [], $user['id']);
+            json_response(['success' => true]);
+        }
+    }
+
+    // 23. GESTÃO DE ORÇAMENTOS (FAST QUOTE BUILDER)
+    if ($segments[0] === 'orcamentos') {
+        $user = authenticate_user();
+
+        // GET /api/orcamentos
+        if (count($segments) === 1 && $method === 'GET') {
+            $params = [];
+            if (!empty($_GET['status'])) $params[] = "status=eq." . urlencode($_GET['status']);
+            if (!empty($_GET['clienteId'])) $params[] = "bling_contact_id=eq." . urlencode($_GET['clienteId']);
+            $queryStr = !empty($params) ? implode('&', $params) . '&' : '';
+            $res = supabase_fetch("flrBling_quotes?{$queryStr}select=*&order=created_at.desc");
+            json_response(['data' => is_array($res) ? $res : []]);
+        }
+
+        // POST /api/orcamentos
+        if (count($segments) === 1 && $method === 'POST') {
+            $body = get_json_input();
+            if (empty($body['bling_contact_nome']) && empty($body['bling_contact_id'])) {
+                json_response(['error' => 'Cliente é obrigatório'], 400);
+            }
+            if (empty($body['numero'])) {
+                $year = date('Y');
+                $body['numero'] = "ORC-{$year}-" . str_pad(time() % 10000, 4, '0', STR_PAD_LEFT);
+            }
+            $body['user_id'] = $user['id'];
+            $body['created_at'] = date('c');
+            $body['updated_at'] = date('c');
+
+            $quoteRes = supabase_fetch("flrBling_quotes", 'POST', [$body], ['Prefer: return=representation']);
+            $quote = isset($quoteRes[0]) ? $quoteRes[0] : $quoteRes;
+            log_activity('quote_create', isset($body['bling_contact_id']) ? $body['bling_contact_id'] : null,
+                "Orçamento {$body['numero']} criado", ['quote' => $quote], $user['id']);
+            json_response(['success' => true, 'data' => $quote], 201);
+        }
+
+        // PUT /api/orcamentos/:id
+        if (count($segments) === 2 && $method === 'PUT') {
+            $id = $segments[1];
+            $body = get_json_input();
+            $body['updated_at'] = date('c');
+            supabase_fetch("flrBling_quotes?id=eq." . urlencode($id), 'PATCH', $body);
+            log_activity('quote_update', null, "Orçamento atualizado (ID: {$id})", [], $user['id']);
+            json_response(['success' => true]);
+        }
+
+        // DELETE /api/orcamentos/:id
+        if (count($segments) === 2 && $method === 'DELETE') {
+            $id = $segments[1];
+            supabase_fetch("flrBling_quotes?id=eq." . urlencode($id), 'PATCH', ['status' => 'cancelado', 'updated_at' => date('c')]);
+            log_activity('quote_cancel', null, "Orçamento cancelado (ID: {$id})", [], $user['id']);
+            json_response(['success' => true]);
+        }
+
+        // POST /api/orcamentos/:id/exportar-bling
+        if (count($segments) === 3 && $segments[2] === 'exportar-bling' && $method === 'POST') {
+            $id = $segments[1];
+            $body = get_json_input();
+            $destino = isset($body['destino']) ? $body['destino'] : 'pedido';
+
+            $qRes = supabase_fetch("flrBling_quotes?id=eq." . urlencode($id) . "&select=*");
+            $quote = isset($qRes[0]) ? $qRes[0] : null;
+            if (!$quote) {
+                json_response(['error' => 'Orçamento não encontrado'], 404);
+            }
+
+            // Desmembramento de kits
+            $itensExpandidos = [];
+            $itens = isset($quote['itens']) && is_array($quote['itens']) ? $quote['itens'] : [];
+            foreach ($itens as $item) {
+                if (isset($item['tipo']) && $item['tipo'] === 'kit' && !empty($item['itens_kit'])) {
+                    $qtdKit = floatval(isset($item['quantidade']) ? $item['quantidade'] : 1);
+                    $totalKitPrice = floatval(isset($item['preco_total']) ? $item['preco_total'] : 0);
+                    $totalKitBase = 0;
+                    foreach ($item['itens_kit'] as $ki) {
+                        $totalKitBase += floatval($ki['quantity']) * floatval($ki['unit_price']);
+                    }
+                    foreach ($item['itens_kit'] as $ki) {
+                        $fator = $totalKitBase > 0 ? (floatval($ki['quantity']) * floatval($ki['unit_price'])) / $totalKitBase : 0;
+                        $precoAjustado = $totalKitBase > 0 ? ($totalKitPrice * $fator) / (floatval($ki['quantity']) * $qtdKit) : floatval($ki['unit_price']);
+                        $itExp = [
+                            'codigo' => isset($ki['product_code']) ? $ki['product_code'] : '',
+                            'descricao' => $ki['product_name'],
+                            'unidade' => isset($ki['product_unit']) ? $ki['product_unit'] : 'UN',
+                            'quantidade' => floatval($ki['quantity']) * $qtdKit,
+                            'valor' => round($precoAjustado, 4)
+                        ];
+                        if (!empty($ki['bling_product_id'])) $itExp['produto'] = ['id' => intval($ki['bling_product_id'])];
+                        $itensExpandidos[] = $itExp;
+                    }
+                } else {
+                    $itExp = [
+                        'codigo' => isset($item['codigo']) ? $item['codigo'] : '',
+                        'descricao' => isset($item['descricao']) ? $item['descricao'] : (isset($item['nome']) ? $item['nome'] : 'Item'),
+                        'unidade' => isset($item['unidade']) ? $item['unidade'] : 'UN',
+                        'quantidade' => floatval(isset($item['quantidade']) ? $item['quantidade'] : 1),
+                        'valor' => floatval(isset($item['preco_unitario']) ? $item['preco_unitario'] : 0)
+                    ];
+                    if (!empty($item['bling_product_id'])) $itExp['produto'] = ['id' => intval($item['bling_product_id'])];
+                    $itensExpandidos[] = $itExp;
+                }
+            }
+
+            $contatoPayload = !empty($quote['bling_contact_id'])
+                ? ['contato' => ['id' => intval($quote['bling_contact_id'])]]
+                : ['contato' => ['nome' => isset($quote['bling_contact_nome']) ? $quote['bling_contact_nome'] : 'Cliente']];
+
+            if ($destino === 'pedido') {
+                $blingPayload = array_merge($contatoPayload, [
+                    'data' => isset($quote['data_emissao']) ? $quote['data_emissao'] : date('Y-m-d'),
+                    'itens' => $itensExpandidos,
+                    'observacoes' => isset($quote['observacoes']) ? $quote['observacoes'] : '',
+                    'desconto' => ['tipo' => '%', 'valor' => floatval(isset($quote['desconto_pct']) ? $quote['desconto_pct'] : 0)],
+                    'transporte' => ['frete' => floatval(isset($quote['frete']) ? $quote['frete'] : 0)]
+                ]);
+                $blingRes = fetch_bling_api('pedidos/vendas', [], 'POST', $blingPayload);
+            } else {
+                $blingPayload = array_merge($contatoPayload, [
+                    'dataEmissao' => isset($quote['data_emissao']) ? $quote['data_emissao'] : date('Y-m-d'),
+                    'dataValidade' => isset($quote['data_validade']) ? $quote['data_validade'] : null,
+                    'itens' => $itensExpandidos,
+                    'observacoes' => isset($quote['observacoes']) ? $quote['observacoes'] : '',
+                    'desconto' => floatval(isset($quote['desconto_pct']) ? $quote['desconto_pct'] : 0)
+                ]);
+                $blingRes = fetch_bling_api('propostas-comerciais', [], 'POST', $blingPayload);
+            }
+
+            $blingData = isset($blingRes['data']) ? $blingRes['data'] : $blingRes;
+            $blingId = isset($blingData['id']) ? $blingData['id'] : null;
+
+            // Salvar no Supabase
+            $syncField = $destino === 'pedido' ? 'bling_pedido_id' : 'bling_proposta_id';
+            supabase_fetch("flrBling_quotes?id=eq." . urlencode($id), 'PATCH', [
+                $syncField => $blingId,
+                'status' => 'aprovado',
+                'updated_at' => date('c')
+            ]);
+
+            log_activity('quote_exported', null, "Orçamento {$quote['numero']} exportado como {$destino} para o Bling (ID: {$blingId})", [], $user['id']);
+
+            json_response([
+                'success' => true,
+                'message' => "Orçamento exportado com sucesso para o Bling como " . ($destino === 'pedido' ? 'Pedido de Venda' : 'Proposta Comercial') . "!",
+                'bling_id' => $blingId,
+                'destino' => $destino
+            ]);
         }
     }
 

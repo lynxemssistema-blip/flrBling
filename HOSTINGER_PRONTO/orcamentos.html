@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Saldos de Estoque | Bling ERP FLR</title>
+  <title>Construtor de Orçamentos | Bling ERP FLR</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1029,7 +1029,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 }
   </style>
 </head>
-<body data-page="stock">
+<body data-page="quotes">
 
   <!-- ==========================================================================
        1. LANDING PAGE (PÁGINA INICIAL DE APRESENTAÇÃO)
@@ -1294,7 +1294,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
             <span class="nav-badge" id="navOrdersCount">0</span>
           </a>
 
-          <a href="orcamentos.html" class="nav-item" id="navQuotes">
+          <a href="orcamentos.html" class="nav-item" id="navQuotes" class="nav-item active">
             <i class="fa-solid fa-file-invoice-dollar" style="color:#10B981"></i>
             <span>Orçamentos</span>
             <span class="nav-badge" id="navQuotesCount">0</span>
@@ -1335,7 +1335,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
             <span class="nav-badge" id="navOsCount">0</span>
           </a>
 
-          <a href="estoque.html" class="nav-item" id="navStock" class="nav-item active">
+          <a href="estoque.html" class="nav-item" id="navStock">
             <i class="fa-solid fa-warehouse text-blue"></i>
             <span>Saldos de Estoque</span>
           </a>
@@ -1381,9 +1381,9 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
           <div class="breadcrumb-container">
             <span class="bc-item">Início</span>
             <i class="fa-solid fa-chevron-right bc-separator"></i>
-            <span class="bc-item" id="bcCategoryName">Serviços & Operacional</span>
+            <span class="bc-item" id="bcCategoryName">Vendas & Comercial</span>
             <i class="fa-solid fa-chevron-right bc-separator"></i>
-            <span class="bc-item active" id="bcViewName">Saldos de Estoque</span>
+            <span class="bc-item active" id="bcViewName">Orçamentos</span>
           </div>
 
           <div class="header-actions">
@@ -1622,7 +1622,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
               </div>
               <div class="table-tools" style="display: flex; align-items: center; gap: 12px;">
                 <button class="btn btn-bling-primary btn-sm" id="btnOpenNewItemModal" onclick="openNewProductModal()" title="Cadastrar Novo Produto ou Serviço no Bling">
-                  <i class="fa-solid fa-plus"></i> <span id="lblNewItemBtn">Acerto de Estoque</span>
+                  <i class="fa-solid fa-plus"></i> <span id="lblNewItemBtn">Novo Orçamento</span>
                 </button>
                 <span class="last-sync-text" id="lastSyncText">Última atualização: --:--:--</span>
               </div>

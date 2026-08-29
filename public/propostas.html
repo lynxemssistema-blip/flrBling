@@ -1281,12 +1281,23 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
             <span>Categorias</span>
           </a>
 
+          <a href="kits.html" class="nav-item" id="navKits">
+            <i class="fa-solid fa-layer-group" style="color:#F59E0B"></i>
+            <span>Kits de Produtos</span>
+          </a>
+
           <div class="nav-section-title">VENDAS & COMERCIAL</div>
 
           <a href="pedidos.html" class="nav-item" id="navOrders">
             <i class="fa-solid fa-cart-shopping text-blue"></i>
             <span>Pedidos de Venda</span>
             <span class="nav-badge" id="navOrdersCount">0</span>
+          </a>
+
+          <a href="orcamentos.html" class="nav-item" id="navQuotes">
+            <i class="fa-solid fa-file-invoice-dollar" style="color:#10B981"></i>
+            <span>Orçamentos</span>
+            <span class="nav-badge" id="navQuotesCount">0</span>
           </a>
 
           <a href="propostas.html" class="nav-item" id="navProposals" class="nav-item active">
@@ -2777,65 +2788,390 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
     </div>
   </div>
 
+  <!-- Estilos do Modal de Pedido de Venda (Estilo Bling) -->
+  <style>
+  .modal-xl { max-width: 980px; }
+
+  /* Info banner */
+  .order-info-banner {
+    background: #EBF4FF; border-top: 1px solid #BFDBFE; border-bottom: 1px solid #BFDBFE;
+    padding: 10px 20px; display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; color: #1E40AF; flex-shrink: 0;
+  }
+  .order-info-banner .fa-circle-info { color: #3B82F6; margin-top: 1px; flex-shrink: 0; }
+  .order-info-banner span { flex: 1; line-height: 1.5; }
+  .order-banner-close {
+    background: none; border: none; cursor: pointer; color: #64748B;
+    font-size: 18px; padding: 0 2px; line-height: 1; flex-shrink: 0; margin-top: -1px;
+  }
+  .order-banner-close:hover { color: #1E293B; }
+
+  /* Sections */
+  .order-section { display: flex; flex-direction: column; }
+  .order-section-title {
+    font-size: 12px; font-weight: 700; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 14px;
+  }
+
+  /* Client autocomplete */
+  .client-search-wrapper { position: relative; display: flex; align-items: stretch; }
+  .client-search-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 13px; pointer-events: none; z-index: 1;
+  }
+  .client-search-input { padding-left: 32px !important; padding-right: 40px !important; flex: 1; border-radius: var(--radius-md) 0 0 var(--radius-md) !important; }
+  .client-search-add-btn {
+    width: 36px; flex-shrink: 0; background: var(--bling-green); border: none;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: #fff; cursor: pointer; font-size: 13px; transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .client-search-add-btn:hover { background: var(--bling-green-dark); }
+  .client-autocomplete-dropdown {
+    position: absolute; top: calc(100% + 3px); left: 0; right: 0;
+    background: #fff; border: 1px solid var(--border-color);
+    border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+    z-index: 9999; max-height: 240px; overflow-y: auto; display: none;
+  }
+  .client-autocomplete-dropdown.open { display: block; }
+  .client-autocomplete-item {
+    padding: 9px 14px; cursor: pointer; display: flex; flex-direction: column;
+    border-bottom: 1px solid var(--border-color-light); transition: background 0.1s;
+  }
+  .client-autocomplete-item:last-child { border-bottom: none; }
+  .client-autocomplete-item:hover, .client-autocomplete-item.highlighted { background: var(--bling-blue-light); }
+  .client-autocomplete-item .ac-name { font-weight: 600; font-size: 13px; color: var(--text-primary); }
+  .client-autocomplete-item .ac-doc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .client-autocomplete-loading { padding: 14px; text-align: center; font-size: 13px; color: var(--text-muted); }
+
+  /* Tabs */
+  .order-tabs-wrapper { border-bottom: 2px solid var(--border-color); }
+  .order-tabs { display: flex; }
+  .order-tab {
+    background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px;
+    padding: 9px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer; transition: color 0.15s, border-color 0.15s; font-family: var(--font-sans);
+  }
+  .order-tab:hover { color: var(--bling-green); }
+  .order-tab.active { color: var(--bling-green); border-bottom-color: var(--bling-green); }
+
+  /* Items table */
+  .order-items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .order-items-table thead tr { background: #F8FAFC; border-bottom: 2px solid var(--border-color); }
+  .order-items-table th { padding: 7px 5px; text-align: left; font-weight: 600; font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+  .order-items-table tbody tr { border-bottom: 1px solid var(--border-color-light); }
+  .order-items-table tbody tr:hover { background: #FAFCFF; }
+  .order-items-table td { padding: 3px 3px; vertical-align: middle; }
+  .item-num { text-align: center; font-size: 12px; color: var(--text-muted); }
+  .order-item-input {
+    width: 100%; border: 1px solid transparent; border-radius: 4px;
+    padding: 5px 6px; font-size: 12px; background: transparent; color: var(--text-primary);
+    transition: border-color 0.12s, background 0.12s; font-family: var(--font-sans);
+  }
+  .order-item-input:focus { outline: none; border-color: var(--border-focus); background: #fff; box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
+  .order-item-input[readonly] { color: var(--text-secondary); background: #F8FAFC; cursor: default; }
+  .item-total { font-weight: 700; }
+  .order-item-del-btn {
+    background: none; border: none; color: var(--bling-red); cursor: pointer;
+    padding: 4px 7px; border-radius: 4px; font-size: 12px; transition: background 0.12s; opacity: 0.55;
+  }
+  .order-item-del-btn:hover { opacity: 1; background: var(--bling-red-light); }
+  #orderItemsBody .order-item-row:only-child .order-item-del-btn { opacity: 0.2; pointer-events: none; }
+  .order-add-item-btn {
+    background: none; border: none; color: var(--bling-green); font-size: 13px;
+    font-weight: 600; cursor: pointer; padding: 6px 2px;
+    display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-sans);
+  }
+  .order-add-item-btn:hover { opacity: 0.75; }
+
+  /* Totals */
+  .order-totals-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; }
+  .order-total-field label { font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Grids específicos do pedido */
+  .ord-grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+  .ord-grid-5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
+  .ord-grid-4 .col-2, .ord-grid-5 .col-2 { grid-column: span 2; }
+
+  @media (max-width: 768px) {
+    .order-totals-grid { grid-template-columns: repeat(2,1fr); }
+    .ord-grid-4, .ord-grid-5 { grid-template-columns: 1fr 1fr; }
+    .modal-xl { max-width: 98vw; }
+  }
+  </style>
+
   <!-- ==========================================================================
-       10. MODAL DE CADASTRO DE PEDIDO DE VENDA (BLING & SUPABASE)
+       10. MODAL DE PEDIDO DE VENDA (Estilo Bling ERP — Layout Completo)
        ========================================================================== -->
   <div class="modal-backdrop" id="modalNewOrder">
-    <div class="modal-box modal-lg">
+    <div class="modal-box modal-xl">
+
+      <!-- Cabeçalho -->
       <div class="modal-header">
         <div class="modal-title">
-          <i class="fa-solid fa-cart-plus text-blue"></i>
-          <h3>Novo Pedido de Venda / Faturamento</h3>
+          <i class="fa-solid fa-cart-shopping text-blue"></i>
+          <h3 id="orderModalTitle">Pedido de venda</h3>
         </div>
-        <button class="modal-close" id="btnCloseNewOrderModal">&times;</button>
-      </div>
-      <form id="formNewOrder" onsubmit="event.preventDefault(); handleSaveOrder();">
-        <div class="modal-body">
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label for="ordNumero">Número do Pedido</label>
-              <input type="number" id="ordNumero" class="form-control text-mono" placeholder="Automático ou digite">
-            </div>
-            <div class="form-group">
-              <label for="ordData">Data do Pedido *</label>
-              <input type="date" id="ordData" class="form-control" required>
-            </div>
-            <div class="form-group col-2">
-              <label for="ordCliente">Cliente / Destinatário *</label>
-              <input type="text" id="ordCliente" class="form-control" placeholder="Digite o nome ou razão social do cliente" required>
-            </div>
-            <div class="form-group">
-              <label for="ordVendedor">Vendedor / Consultor</label>
-              <input type="text" id="ordVendedor" class="form-control" placeholder="Ex: Roberto Vendas">
-            </div>
-            <div class="form-group">
-              <label for="ordSituacao">Situação Inicial</label>
-              <select id="ordSituacao" class="form-control">
-                <option value="Em andamento" selected>Em andamento</option>
-                <option value="Atendido">Atendido / Aprovado</option>
-                <option value="Cancelado">Cancelado</option>
-              </select>
-            </div>
-            <div class="form-group col-2">
-              <label for="ordItemDesc">Descrição do Item Principal / Pacote de Venda *</label>
-              <input type="text" id="ordItemDesc" class="form-control" placeholder="Ex: 2x Splits 18k BTUs Inverter + Instalação Técnica" required>
-            </div>
-            <div class="form-group">
-              <label for="ordQtd">Quantidade Total</label>
-              <input type="number" id="ordQtd" class="form-control text-center" value="1" min="1" required>
-            </div>
-            <div class="form-group">
-              <label for="ordValorTotal">Valor Total do Pedido (R$) *</label>
-              <input type="number" step="0.01" id="ordValorTotal" class="form-control text-right font-bold text-emerald" placeholder="0.00" required>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer" style="display: flex; justify-content: space-between;">
-          <button type="button" class="btn btn-secondary" id="btnCloseNewOrderModalFooter">Cancelar</button>
-          <button type="submit" class="btn btn-bling-primary" id="btnSubmitOrder">
-            <i class="fa-solid fa-floppy-disk"></i> Salvar Pedido de Venda
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--text-muted);">* Campos obrigatórios</span>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnCloseNewOrderModal">Cancelar</button>
+          <button type="button" class="btn btn-bling-primary btn-sm" id="btnSubmitOrder" onclick="handleSaveOrder()">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar
           </button>
         </div>
+      </div>
+
+      <form id="formNewOrder" onsubmit="event.preventDefault(); handleSaveOrder();">
+        <div class="modal-body" style="padding:0;max-height:calc(88vh - 58px);overflow-y:auto;display:flex;flex-direction:column;gap:0;">
+
+          <!-- Banner informativo -->
+          <div class="order-info-banner" id="orderInfoBanner">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>As contas são lançadas automaticamente no menu 'Finanças', em 'Contas a receber ou Caixas e Bancos', conforme a condição de pagamento selecionada.</span>
+            <button type="button" class="order-banner-close" onclick="document.getElementById('orderInfoBanner').style.display='none'">×</button>
+          </div>
+
+          <div style="padding:18px 20px;display:flex;flex-direction:column;gap:22px;">
+
+            <!-- ── DADOS DO CLIENTE ── -->
+            <div class="order-section">
+              <div class="order-section-title">Dados do cliente</div>
+              <div class="ord-grid-4">
+                <!-- Campo Cliente com Autocomplete Bling -->
+                <div class="form-group col-2" style="position:relative;">
+                  <label>Cliente <span style="color:var(--bling-red)">*</span></label>
+                  <div class="client-search-wrapper">
+                    <i class="fa-solid fa-magnifying-glass client-search-icon"></i>
+                    <input type="text" id="ordClienteSearch" class="form-control client-search-input"
+                           placeholder="" autocomplete="off"
+                           oninput="onOrderClientSearch(this.value)">
+                    <button type="button" class="client-search-add-btn" title="Cadastrar novo cliente" onclick="openNewClientModal()">
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  </div>
+                  <input type="hidden" id="ordClienteId">
+                  <input type="hidden" id="ordCliente">
+                  <div class="client-autocomplete-dropdown" id="clientAutocompleteDropdown"></div>
+                </div>
+                <!-- Vendedor -->
+                <div class="form-group">
+                  <label for="ordVendedor">Vendedor</label>
+                  <input type="text" id="ordVendedor" class="form-control" placeholder="">
+                </div>
+                <!-- Loja -->
+                <div class="form-group">
+                  <label for="ordLoja">Loja</label>
+                  <select id="ordLoja" class="form-control">
+                    <option value="">Nenhuma</option>
+                  </select>
+                </div>
+              </div>
+              <div style="margin-top:10px;max-width:220px;">
+                <div class="form-group">
+                  <label for="ordListaPreco">Lista de preço</label>
+                  <select id="ordListaPreco" class="form-control">
+                    <option value="">Nenhuma lista</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── ABAS ── -->
+            <div>
+              <div class="order-tabs-wrapper">
+                <div class="order-tabs">
+                  <button type="button" class="order-tab active" id="tabBtnItens" onclick="switchOrderTab('itens')">Itens do pedido de venda</button>
+                  <button type="button" class="order-tab" id="tabBtnComissoes" onclick="switchOrderTab('comissoes')">Comissões</button>
+                </div>
+              </div>
+
+              <!-- TAB: Itens -->
+              <div id="tabItens" style="margin-top:12px;">
+                <table class="order-items-table">
+                  <thead>
+                    <tr>
+                      <th style="width:26px">#</th>
+                      <th>Descrição</th>
+                      <th style="width:96px">Código</th>
+                      <th style="width:42px">Un</th>
+                      <th style="width:80px">Quantidade</th>
+                      <th style="width:100px">Preço lista</th>
+                      <th style="width:62px">Desc. (%)</th>
+                      <th style="width:100px">Preço un</th>
+                      <th style="width:100px">Preço total</th>
+                      <th style="width:30px"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="orderItemsBody">
+                    <tr class="order-item-row">
+                      <td class="item-num">1</td>
+                      <td><input type="text" class="order-item-input item-desc" placeholder="Pesquise por código, descrição ou GTIN" oninput="recalcOrderTotals()"></td>
+                      <td><input type="text" class="order-item-input item-code"></td>
+                      <td><input type="text" class="order-item-input item-un" value="UN"></td>
+                      <td><input type="number" class="order-item-input item-qty" value="1" min="0" step="0.001" oninput="recalcOrderTotals()"></td>
+                      <td><input type="number" class="order-item-input item-preco-lista" value="0.00" step="0.01" oninput="recalcOrderTotals()"></td>
+                      <td><input type="number" class="order-item-input item-desc-pct" value="0" min="0" max="100" step="0.01" oninput="recalcOrderTotals()"></td>
+                      <td><input type="number" class="order-item-input item-preco-un" value="0.00" step="0.01" oninput="recalcOrderTotals()"></td>
+                      <td><input type="number" class="order-item-input item-total" value="0.00" step="0.01" readonly></td>
+                      <td><button type="button" class="order-item-del-btn" onclick="removeOrderItem(this)" title="Remover"><i class="fa-solid fa-trash-can"></i></button></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div style="padding:6px 0 0;">
+                  <button type="button" class="order-add-item-btn" onclick="addOrderItem()">
+                    <i class="fa-solid fa-plus"></i> Adicionar outro item
+                  </button>
+                </div>
+              </div>
+
+              <!-- TAB: Comissões -->
+              <div id="tabComissoes" style="display:none;padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">
+                Nenhuma comissão configurada para este pedido.
+              </div>
+            </div>
+
+            <!-- ── TOTAIS ── -->
+            <div class="order-section">
+              <div class="order-section-title">Totais</div>
+              <div class="order-totals-grid">
+                <div class="order-total-field"><label>Nº de itens</label><input type="text" id="totNItens" class="form-control" value="0" readonly></div>
+                <div class="order-total-field"><label>Soma das quantidades</label><input type="text" id="totSomaQtd" class="form-control" value="0,00" readonly></div>
+                <div class="order-total-field"><label>Desconto</label><input type="number" id="totDesconto" class="form-control" value="0" min="0" step="0.01" oninput="recalcOrderTotals()"></div>
+                <div class="order-total-field"><label>Prazo de entrega</label><input type="number" id="totPrazoEntrega" class="form-control" value="0" min="0"></div>
+                <div class="order-total-field"><label>Outras despesas</label><input type="number" id="totOutrasDespesas" class="form-control" value="0.00" step="0.01" oninput="recalcOrderTotals()"></div>
+              </div>
+              <div class="order-totals-grid" style="margin-top:8px;">
+                <div class="order-total-field"><label>Desconto total da venda</label><input type="text" id="totDescTotal" class="form-control" value="0,00" readonly></div>
+                <div class="order-total-field"><label>Total de comissões</label><input type="text" id="totComissoes" class="form-control" value="-0,00" readonly></div>
+                <div class="order-total-field"><label>Desconto total dos itens</label><input type="text" id="totDescItens" class="form-control" value="0,00" readonly></div>
+                <div class="order-total-field"><label>Total dos itens</label><input type="text" id="totTotalItens" class="form-control" value="0,00" readonly style="font-weight:700;"></div>
+                <div class="order-total-field" style="background:#f0fdf4;border-radius:6px;padding:4px 8px;">
+                  <label style="color:var(--bling-green-dark);">Total da venda</label>
+                  <input type="text" id="totValorTotal" class="form-control" value="0,00" readonly style="font-weight:800;font-size:15px;color:var(--bling-green-dark);background:transparent;border:none !important;padding-left:0;">
+                </div>
+              </div>
+            </div>
+
+            <!-- ── DETALHES DA VENDA ── -->
+            <div class="order-section">
+              <div class="order-section-title">Detalhes da venda</div>
+              <div class="ord-grid-5">
+                <div class="form-group">
+                  <label for="ordNumero">Número do pedido</label>
+                  <input type="number" id="ordNumero" class="form-control text-mono" placeholder="Automático">
+                </div>
+                <div class="form-group">
+                  <label for="ordData">Data da venda</label>
+                  <input type="date" id="ordData" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="ordDataSaida">Data saída</label>
+                  <input type="date" id="ordDataSaida" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="ordDataPrevista">Data prevista</label>
+                  <input type="date" id="ordDataPrevista" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label for="ordPedidoCompra">Pedido de compra</label>
+                  <input type="text" id="ordPedidoCompra" class="form-control">
+                </div>
+              </div>
+              <div style="margin-top:10px;max-width:220px;">
+                <div class="form-group">
+                  <label for="ordSituacao">Situação</label>
+                  <select id="ordSituacao" class="form-control">
+                    <option value="Em andamento" selected>Em andamento</option>
+                    <option value="Atendido">Atendido / Aprovado</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── PAGAMENTO ── -->
+            <div class="order-section">
+              <div class="order-section-title">Pagamento</div>
+              <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:200px;">
+                  <label for="ordCondPagamento">Condição de pagamento</label>
+                  <input type="text" id="ordCondPagamento" class="form-control" placeholder="">
+                </div>
+                <div style="padding-bottom:2px;">
+                  <button type="button" class="btn btn-sm" style="background:var(--bling-green);color:#fff;height:38px;white-space:nowrap;padding:0 14px;font-weight:600;">
+                    Gerar parcelas
+                  </button>
+                </div>
+                <div class="form-group" style="flex:1;min-width:200px;">
+                  <label for="ordCategoria">Categoria</label>
+                  <select id="ordCategoria" class="form-control">
+                    <option value="">Sem categoria</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── TRANSPORTADOR ── -->
+            <div class="order-section">
+              <div class="order-section-title">Transportador</div>
+              <div class="ord-grid-5">
+                <div class="form-group col-2">
+                  <label for="ordTranspNome">Nome</label>
+                  <input type="text" id="ordTranspNome" class="form-control">
+                </div>
+                <div class="form-group col-2">
+                  <label for="ordFreteConta">Frete por conta</label>
+                  <select id="ordFreteConta" class="form-control">
+                    <option value="0" selected>0 - Contratação do Frete por conta do Remetente (CIF)</option>
+                    <option value="1">1 - Contratação do Frete por conta do Destinatário (FOB)</option>
+                    <option value="2">2 - Contratação do Frete por conta de Terceiros</option>
+                    <option value="9">9 - Sem Frete</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="ordTranspQtd">Quantidade</label>
+                  <input type="number" id="ordTranspQtd" class="form-control" value="0" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="ordPesoBruto">Peso bruto</label>
+                  <input type="number" id="ordPesoBruto" class="form-control" value="0.000" step="0.001">
+                </div>
+                <div class="form-group">
+                  <label for="ordFrete">Frete</label>
+                  <input type="number" id="ordFrete" class="form-control" value="0.00" step="0.01" oninput="recalcOrderTotals()">
+                </div>
+              </div>
+              <div style="margin-top:10px;max-width:260px;">
+                <div class="form-group">
+                  <label for="ordLogistica">Logística</label>
+                  <select id="ordLogistica" class="form-control">
+                    <option value="">Selecione a integração</option>
+                  </select>
+                </div>
+              </div>
+              <div style="margin-top:8px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text-secondary);">
+                  <input type="checkbox" id="ordEndDifCobranca"> Endereço de entrega diferente da cobrança
+                </label>
+              </div>
+            </div>
+
+            <!-- ── DADOS ADICIONAIS ── -->
+            <div class="order-section" style="padding-bottom:8px;">
+              <div class="order-section-title">Dados adicionais</div>
+              <div class="form-group">
+                <label for="ordObservacoes">Observações</label>
+                <textarea id="ordObservacoes" class="form-control" rows="3" style="resize:vertical;"></textarea>
+              </div>
+              <div class="form-group" style="margin-top:10px;">
+                <label for="ordObsInternas">Observações internas</label>
+                <textarea id="ordObsInternas" class="form-control" rows="3" style="resize:vertical;"></textarea>
+              </div>
+            </div>
+
+          </div><!-- /padding wrapper -->
+        </div><!-- /modal-body -->
       </form>
     </div>
   </div>
@@ -2967,6 +3303,415 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="js/app.js?v=2.2"></script>
+  <!-- =====================================================================
+       ESTILOS: KITS + CONSTRUTOR DE ORÇAMENTOS
+       ===================================================================== -->
+  <style>
+  /* Kit Builder */
+  .kit-items-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .kit-items-table thead tr { background:#F8FAFC; border-bottom:2px solid var(--border-color); }
+  .kit-items-table th { padding:7px 6px; text-align:left; font-weight:600; font-size:11px; color:var(--text-secondary); white-space:nowrap; }
+  .kit-items-table tbody tr { border-bottom:1px solid var(--border-color-light); }
+  .kit-item-input { width:100%; border:1px solid transparent; border-radius:4px; padding:5px 6px; font-size:12px; background:transparent; color:var(--text-primary); transition:border-color .12s,background .12s; font-family:var(--font-sans); }
+  .kit-item-input:focus { outline:none; border-color:var(--border-focus); background:#fff; box-shadow:0 0 0 2px rgba(59,130,246,.1); }
+  .kit-prod-search-wrapper { position:relative; }
+  .kit-prod-dropdown { position:absolute; top:calc(100% + 3px); left:0; right:0; background:#fff; border:1px solid var(--border-color); border-radius:var(--radius-md); box-shadow:var(--shadow-lg); z-index:9999; max-height:220px; overflow-y:auto; display:none; }
+  .kit-prod-dropdown.open { display:block; }
+  .kit-prod-item { padding:9px 12px; cursor:pointer; border-bottom:1px solid var(--border-color-light); }
+  .kit-prod-item:hover { background:var(--bling-blue-light); }
+  .kit-prod-item .kp-name { font-weight:600; font-size:13px; }
+  .kit-prod-item .kp-code { font-size:11px; color:var(--text-muted); }
+
+  /* Quote Builder */
+  .quote-status-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+  .qstatus-rascunho { background:#F1F5F9; color:#64748B; }
+  .qstatus-apresentado { background:#FEF3C7; color:#92400E; }
+  .qstatus-aprovado { background:#D1FAE5; color:#065F46; }
+  .qstatus-cancelado { background:#FEE2E2; color:#991B1B; }
+
+  .quote-item-row { border-bottom:1px solid var(--border-color-light); }
+  .quote-item-row:hover { background:#FAFCFF; }
+  .quote-kit-header { background:#FFFBEB; font-weight:700; font-size:12px; color:#92400E; }
+  .quote-kit-sub { background:#FFFBF5; }
+  .quote-items-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .quote-items-table th { padding:6px 8px; text-align:left; font-weight:600; font-size:11px; color:var(--text-secondary); background:#F8FAFC; border-bottom:2px solid var(--border-color); white-space:nowrap; }
+  .quote-items-table td { padding:4px 6px; vertical-align:middle; }
+  .qi-input { width:100%; border:1px solid transparent; border-radius:4px; padding:4px 6px; font-size:12px; background:transparent; font-family:var(--font-sans); }
+  .qi-input:focus { outline:none; border-color:var(--border-focus); background:#fff; }
+
+  /* Quote totals panel */
+  .quote-totals-panel { background:#F8FAFC; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:14px; }
+  .quote-total-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; font-size:13px; color:var(--text-secondary); }
+  .quote-total-row.final { font-size:16px; font-weight:800; color:var(--bling-green-dark); border-top:2px solid var(--border-color); margin-top:8px; padding-top:10px; }
+
+  /* Kit grid picker */
+  .kit-picker-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+  .kit-picker-card { border:2px solid var(--border-color); border-radius:var(--radius-md); padding:12px; cursor:pointer; transition:border-color .15s,box-shadow .15s; text-align:center; }
+  .kit-picker-card:hover { border-color:var(--bling-green); box-shadow:0 0 0 3px rgba(0,168,104,.1); }
+  .kit-picker-card .kpc-name { font-weight:700; font-size:13px; margin-bottom:4px; }
+  .kit-picker-card .kpc-price { font-size:14px; font-weight:800; color:var(--bling-green-dark); }
+  .kit-picker-card .kpc-count { font-size:11px; color:var(--text-muted); }
+
+  /* Print preview */
+  @media print {
+    .modal-backdrop, .sidebar, .topbar, .erp-view-pane, #toastContainer { display:none !important; }
+    #quotePreviewPrint { display:block !important; position:fixed; top:0; left:0; width:100%; z-index:99999; background:#fff; }
+  }
+  </style>
+
+  <!-- ==========================================================================
+       11. MODAL: GERENCIADOR DE KITS DE PRODUTOS
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalKitBuilder">
+    <div class="modal-box modal-xl">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-layer-group" style="color:#F59E0B"></i>
+          <h3 id="kitBuilderTitle">Novo Kit de Produtos</h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnCloseKitModal">Cancelar</button>
+          <button type="button" class="btn btn-bling-primary btn-sm" onclick="handleSaveKit()">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Kit
+          </button>
+        </div>
+      </div>
+      <form id="formKitBuilder" onsubmit="event.preventDefault();handleSaveKit();">
+        <div class="modal-body" style="padding:20px;max-height:calc(88vh - 60px);overflow-y:auto;">
+          <input type="hidden" id="kitId">
+
+          <!-- Dados do Kit -->
+          <div class="order-section" style="margin-bottom:20px;">
+            <div class="order-section-title">Dados do Kit</div>
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;">
+              <div class="form-group">
+                <label for="kitNome">Nome do Kit *</label>
+                <input type="text" id="kitNome" class="form-control" placeholder="Ex: Kit Instalação Split 18k + Mão de Obra" required>
+              </div>
+              <div class="form-group">
+                <label for="kitCodigo">Código</label>
+                <input type="text" id="kitCodigo" class="form-control" placeholder="KIT-001">
+              </div>
+              <div class="form-group">
+                <label for="kitImagemUrl">URL da Imagem (opcional)</label>
+                <input type="url" id="kitImagemUrl" class="form-control" placeholder="https://...">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:8px;">
+              <label for="kitDescricao">Descrição comercial (aparece no orçamento)</label>
+              <textarea id="kitDescricao" class="form-control" rows="2" style="resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;margin-top:10px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">
+                <input type="checkbox" id="kitUsarPrecoFixo" onchange="toggleKitPrecoFixo(this.checked)"> Usar preço fixo para este kit
+              </label>
+              <div id="kitPrecoFixoWrapper" style="display:none;">
+                <div class="form-group" style="margin:0;">
+                  <label for="kitPrecoFixo">Preço fixo (R$)</label>
+                  <input type="number" id="kitPrecoFixo" class="form-control" step="0.01" style="width:140px;" value="0">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Itens do Kit -->
+          <div class="order-section">
+            <div class="order-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+              <span>Produtos do Kit</span>
+              <button type="button" class="order-add-item-btn" onclick="openKitProductPickerModal()">
+                <i class="fa-solid fa-magnifying-glass"></i> Buscar produto no Bling
+              </button>
+            </div>
+            <table class="kit-items-table">
+              <thead>
+                <tr>
+                  <th style="width:26px">#</th>
+                  <th>Produto</th>
+                  <th style="width:90px">Código</th>
+                  <th style="width:40px">Un</th>
+                  <th style="width:80px">Quantidade</th>
+                  <th style="width:110px">Preço Unit.</th>
+                  <th style="width:110px">Subtotal</th>
+                  <th style="width:30px"></th>
+                </tr>
+              </thead>
+              <tbody id="kitItemsBody">
+                <!-- Linhas geradas por JS -->
+              </tbody>
+            </table>
+            <div style="margin-top:8px;">
+              <button type="button" onclick="addKitManualRow()" style="font-size:12px;color:var(--text-muted);background:none;border:1px dashed var(--border-color);border-radius:var(--radius-sm);padding:5px 12px;cursor:pointer;width:100%;">
+                <i class="fa-solid fa-keyboard"></i> Adicionar item manual (sem busca no Bling)
+              </button>
+            </div>
+          </div>
+
+          <!-- Rodapé / Totalizador -->
+          <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:24px;align-items:center;padding:12px 0;border-top:2px solid var(--border-color);">
+            <span style="font-size:13px;color:var(--text-secondary);">Total calculado pelos itens:</span>
+            <span id="kitTotalCalculado" style="font-size:18px;font-weight:800;color:var(--bling-green-dark);">R$ 0,00</span>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       12. MODAL: FAST QUOTE BUILDER — CONSTRUTOR ÁGIL DE ORÇAMENTOS
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalQuoteBuilder">
+    <div class="modal-box modal-xl">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-file-invoice-dollar" style="color:#10B981"></i>
+          <h3 id="quoteBuilderTitle">Novo Orçamento</h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnCloseQuoteModal">Cancelar</button>
+          <button type="button" class="btn btn-sm" style="background:#F59E0B;color:#fff;" onclick="openKitPickerModal()" title="Adicionar Kit ao Orçamento">
+            <i class="fa-solid fa-layer-group"></i> + Kit
+          </button>
+          <button type="button" class="btn btn-sm" style="background:#6366F1;color:#fff;" onclick="openProductPickerForQuote()" title="Adicionar Produto Avulso">
+            <i class="fa-solid fa-box"></i> + Produto
+          </button>
+          <button type="button" class="btn btn-bling-primary btn-sm" onclick="handleSaveQuote()">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body" style="padding:0;max-height:calc(88vh - 60px);overflow-y:auto;">
+        <div style="padding:16px 20px 0;display:flex;flex-direction:column;gap:16px;">
+          <input type="hidden" id="quoteId">
+
+          <!-- Cabeçalho do Orçamento -->
+          <div class="order-section">
+            <div class="order-section-title">Dados do Orçamento</div>
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;">
+              <div class="form-group" style="position:relative;">
+                <label>Cliente * <small style="color:var(--text-muted);">(busca no Bling)</small></label>
+                <div class="client-search-wrapper">
+                  <i class="fa-solid fa-magnifying-glass client-search-icon"></i>
+                  <input type="text" id="quoteClienteSearch" class="form-control client-search-input"
+                         placeholder="Digite o nome do cliente..." autocomplete="off"
+                         oninput="onQuoteClientSearch(this.value)">
+                </div>
+                <input type="hidden" id="quoteClienteId">
+                <input type="hidden" id="quoteClienteNome">
+                <div class="client-autocomplete-dropdown" id="quoteClienteDropdown"></div>
+              </div>
+              <div class="form-group">
+                <label for="quoteTitulo">Título do Orçamento</label>
+                <input type="text" id="quoteTitulo" class="form-control" placeholder="Ex: Instalação 2 Splits">
+              </div>
+              <div class="form-group">
+                <label for="quoteDataEmissao">Data de Emissão</label>
+                <input type="date" id="quoteDataEmissao" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="quoteValidadeDias">Validade (dias)</label>
+                <input type="number" id="quoteValidadeDias" class="form-control" value="15" min="1">
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:6px;">
+              <div class="form-group" style="flex:1;min-width:160px;margin:0;">
+                <label for="quoteStatus">Status</label>
+                <select id="quoteStatus" class="form-control" onchange="updateQuoteStatusBadge()">
+                  <option value="rascunho">Rascunho</option>
+                  <option value="apresentado">Apresentado ao Cliente</option>
+                  <option value="aprovado">Aprovado ✓</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+              <div id="quoteStatusBadgeWrapper" style="padding-bottom:2px;"></div>
+              <div id="quoteBlingBadge" style="display:none;padding-bottom:2px;">
+                <span class="quote-status-badge" style="background:#DBEAFE;color:#1E40AF;">
+                  <i class="fa-solid fa-check-circle"></i> Exportado para o Bling
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela de Itens do Orçamento -->
+          <div class="order-section">
+            <div class="order-section-title">Itens do Orçamento</div>
+            <table class="quote-items-table">
+              <thead>
+                <tr>
+                  <th style="width:32px">#</th>
+                  <th>Descrição</th>
+                  <th style="width:80px">Cód.</th>
+                  <th style="width:40px">Un</th>
+                  <th style="width:80px">Qtd</th>
+                  <th style="width:110px">Preço Unit.</th>
+                  <th style="width:62px">Desc %</th>
+                  <th style="width:110px">Total</th>
+                  <th style="width:32px"></th>
+                </tr>
+              </thead>
+              <tbody id="quoteItemsBody">
+                <tr>
+                  <td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">
+                    <i class="fa-solid fa-layer-group"></i> Adicione Kits ou Produtos usando os botões acima
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totais e Observações -->
+          <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:16px;">
+            <div class="form-group">
+              <label for="quoteObservacoes">Observações para o Cliente</label>
+              <textarea id="quoteObservacoes" class="form-control" rows="4" style="resize:vertical;" placeholder="Condições comerciais, prazo de entrega, garantias..."></textarea>
+              <div class="form-group" style="margin-top:8px;">
+                <label for="quoteObsInternas">Observações Internas</label>
+                <textarea id="quoteObsInternas" class="form-control" rows="2" style="resize:vertical;" placeholder="Notas internas (não aparecem no orçamento impresso)"></textarea>
+              </div>
+            </div>
+            <div class="quote-totals-panel">
+              <div class="quote-total-row">
+                <span>Subtotal dos itens</span>
+                <span id="qtSubtotal">R$ 0,00</span>
+              </div>
+              <div class="quote-total-row" style="margin-top:8px;">
+                <label for="qtDescontoPct" style="margin:0;font-size:13px;">Desconto (%)</label>
+                <input type="number" id="qtDescontoPct" class="form-control" style="width:80px;text-align:right;" value="0" min="0" max="100" step="0.1" oninput="recalcQuoteTotals()">
+              </div>
+              <div class="quote-total-row">
+                <label for="qtFrete" style="margin:0;font-size:13px;">Frete (R$)</label>
+                <input type="number" id="qtFrete" class="form-control" style="width:90px;text-align:right;" value="0" step="0.01" oninput="recalcQuoteTotals()">
+              </div>
+              <div class="quote-total-row">
+                <label for="qtOutrasDespesas" style="margin:0;font-size:13px;">Outras despesas</label>
+                <input type="number" id="qtOutrasDespesas" class="form-control" style="width:90px;text-align:right;" value="0" step="0.01" oninput="recalcQuoteTotals()">
+              </div>
+              <div class="quote-total-row final">
+                <span>TOTAL DA VENDA</span>
+                <span id="qtTotalFinal">R$ 0,00</span>
+              </div>
+              <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+                <button type="button" class="btn btn-sm" style="width:100%;background:#6B7280;color:#fff;" onclick="openQuotePrintPreview()">
+                  <i class="fa-solid fa-print"></i> Visualizar / Imprimir
+                </button>
+                <button type="button" id="btnExportarBling" class="btn btn-bling-primary btn-sm" style="width:100%;" onclick="openExportBlingModal()">
+                  <i class="fa-solid fa-upload"></i> Exportar para o Bling
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       13. MODAL: KIT PICKER (selecionar kit para adicionar ao orçamento)
+       ========================================================================== -->
+  <!-- ==========================================================================
+       13b. MODAL: SELETOR DE PRODUTO DO BLING (para Kit Builder)
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalKitProductPicker" style="z-index:10005;">
+    <div class="modal-box" style="max-width:720px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-boxes-stacked" style="color:#6366F1"></i>
+          <h3>Selecionar Produto do Catálogo Bling</h3>
+        </div>
+        <button type="button" class="modal-close" id="btnCloseKitProductPicker">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:16px;">
+        <!-- Barra de busca -->
+        <div style="position:relative;margin-bottom:14px;">
+          <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);"></i>
+          <input type="text" id="kitProdPickerSearch" class="form-control" style="padding-left:36px;"
+                 placeholder="Buscar produto por nome ou código no Bling..."
+                 oninput="onKitProdPickerSearch(this.value)" autocomplete="off">
+        </div>
+        <!-- Resultado -->
+        <div id="kitProdPickerResults" style="max-height:420px;overflow-y:auto;">
+          <div style="text-align:center;color:var(--text-muted);padding:40px 20px;">
+            <i class="fa-solid fa-magnifying-glass" style="font-size:28px;margin-bottom:8px;display:block;"></i>
+            Digite pelo menos 2 caracteres para buscar produtos
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       13. MODAL: KIT PICKER (selecionar kit para adicionar ao orçamento)
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalKitPicker" style="z-index:10001;">
+    <div class="modal-box" style="max-width:640px;">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-layer-group" style="color:#F59E0B"></i><h3>Selecionar Kit</h3></div>
+        <button type="button" class="modal-close" id="btnCloseKitPicker">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:16px;max-height:70vh;overflow-y:auto;">
+        <div id="kitPickerGrid" class="kit-picker-grid">
+          <div style="text-align:center;color:var(--text-muted);padding:24px;grid-column:1/-1;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Carregando kits...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       14. MODAL: EXPORTAR PARA O BLING
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalExportBling" style="z-index:10002;">
+    <div class="modal-box" style="max-width:480px;">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-upload text-blue"></i><h3>Exportar para o Bling</h3></div>
+        <button type="button" class="modal-close" id="btnCloseExportModal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:20px;">
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;">
+          Escolha como deseja criar este orçamento no Bling. Os kits serão automaticamente <strong>desmembrados</strong> nos seus produtos individuais.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <button type="button" class="btn" style="background:#1665D8;color:#fff;padding:16px;flex-direction:column;height:auto;gap:6px;" onclick="confirmarExportBling('pedido')">
+            <i class="fa-solid fa-cart-shopping" style="font-size:22px;"></i>
+            <strong>Pedido de Venda</strong>
+            <small>Baixa estoque e gera NF-e</small>
+          </button>
+          <button type="button" class="btn" style="background:#7C3AED;color:#fff;padding:16px;flex-direction:column;height:auto;gap:6px;" onclick="confirmarExportBling('proposta')">
+            <i class="fa-solid fa-file-signature" style="font-size:22px;"></i>
+            <strong>Proposta Comercial</strong>
+            <small>Para aprovação do cliente</small>
+          </button>
+        </div>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:16px;text-align:center;">
+          ⚠️ Esta ação é irreversível. O orçamento será enviado para o Bling.
+        </p>
+        <div id="exportBlingLoading" style="display:none;text-align:center;padding:20px;">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size:24px;color:var(--bling-green);"></i>
+          <p style="margin-top:8px;color:var(--text-secondary);">Exportando para o Bling...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       15. MODAL: PREVIEW / IMPRESSÃO DO ORÇAMENTO
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalQuotePrint" style="z-index:10003;">
+    <div class="modal-box" style="max-width:760px;">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-print"></i><h3>Visualização do Orçamento</h3></div>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="btn btn-bling-primary btn-sm" onclick="window.print()"><i class="fa-solid fa-print"></i> Imprimir / PDF</button>
+          <button type="button" class="modal-close" id="btnCloseQuotePrint">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:24px;max-height:80vh;overflow-y:auto;" id="quotePrintArea">
+        <!-- Conteúdo gerado dinamicamente -->
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js?v=3.0"></script>
 </body>
 </html>

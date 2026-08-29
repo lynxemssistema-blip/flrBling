@@ -287,3 +287,94 @@ VALUES
     }'::jsonb
 )
 ON CONFLICT (name) DO NOTHING;
+
+-- ==========================================================================
+-- MÓDULO: KITS DE PRODUTOS
+-- ==========================================================================
+
+-- 7. Tabela de Kits (Cabeçalho)
+CREATE TABLE IF NOT EXISTS "flrBling_kits" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nome TEXT NOT NULL,
+    codigo TEXT,
+    descricao TEXT,
+    imagem_url TEXT,
+    preco_fixo NUMERIC(15,2) DEFAULT 0,
+    usar_preco_fixo BOOLEAN DEFAULT false,
+    ativo BOOLEAN DEFAULT true,
+    created_by UUID REFERENCES "flrBling_users"(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 8. Tabela de Itens do Kit (Composição)
+CREATE TABLE IF NOT EXISTS "flrBling_kit_items" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    kit_id UUID NOT NULL REFERENCES "flrBling_kits"(id) ON DELETE CASCADE,
+    bling_product_id BIGINT,
+    product_code TEXT,
+    product_name TEXT NOT NULL,
+    product_unit TEXT DEFAULT 'UN',
+    quantity NUMERIC(10,3) DEFAULT 1,
+    unit_price NUMERIC(15,2) DEFAULT 0,
+    imagem_url TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 9. Tabela de Orçamentos / Propostas Locais
+CREATE TABLE IF NOT EXISTS "flrBling_quotes" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    numero TEXT UNIQUE,                          -- ex: ORC-2026-001
+    titulo TEXT,
+    status TEXT DEFAULT 'rascunho',              -- rascunho | apresentado | aprovado | cancelado
+    bling_contact_id BIGINT,
+    bling_contact_nome TEXT,
+    itens JSONB DEFAULT '[]'::jsonb,             -- snapshot dos itens no momento da criação
+    kits_snapshot JSONB DEFAULT '[]'::jsonb,     -- snapshot dos kits usados
+    total_itens NUMERIC(15,2) DEFAULT 0,
+    desconto_valor NUMERIC(15,2) DEFAULT 0,
+    desconto_pct NUMERIC(5,2) DEFAULT 0,
+    frete NUMERIC(15,2) DEFAULT 0,
+    outras_despesas NUMERIC(15,2) DEFAULT 0,
+    total_final NUMERIC(15,2) DEFAULT 0,
+    validade_dias INTEGER DEFAULT 15,
+    observacoes TEXT,
+    obs_internas TEXT,
+    data_emissao DATE DEFAULT CURRENT_DATE,
+    data_validade DATE,
+    -- Vínculo com Bling após exportação
+    bling_pedido_id BIGINT,
+    bling_proposta_id BIGINT,
+    bling_exportado_em TIMESTAMPTZ,
+    bling_export_tipo TEXT,                      -- 'pedido' | 'proposta'
+    created_by UUID REFERENCES "flrBling_users"(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Índices de Alta Performance
+CREATE INDEX IF NOT EXISTS "idx_flrBling_kits_ativo" ON "flrBling_kits" (ativo);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_kits_codigo" ON "flrBling_kits" (codigo);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_kit_items_kit_id" ON "flrBling_kit_items" (kit_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_kit_items_prod_id" ON "flrBling_kit_items" (bling_product_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_quotes_status" ON "flrBling_quotes" (status);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_quotes_contact" ON "flrBling_quotes" (bling_contact_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_quotes_numero" ON "flrBling_quotes" (numero);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_quotes_created_at" ON "flrBling_quotes" (created_at DESC);
+
+-- Habilitar Row Level Security (RLS)
+ALTER TABLE "flrBling_kits" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "flrBling_kit_items" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "flrBling_quotes" ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de Acesso
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_kits" ON "flrBling_kits";
+CREATE POLICY "Permitir acesso total flrBling_kits" ON "flrBling_kits" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_kit_items" ON "flrBling_kit_items";
+CREATE POLICY "Permitir acesso total flrBling_kit_items" ON "flrBling_kit_items" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_quotes" ON "flrBling_quotes";
+CREATE POLICY "Permitir acesso total flrBling_quotes" ON "flrBling_quotes" FOR ALL USING (true);
+

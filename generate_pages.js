@@ -113,6 +113,24 @@ const pages = [
     category: 'Serviços & Operacional',
     viewName: 'Saldos de Estoque',
     btnLabel: 'Acerto de Estoque'
+  },
+  {
+    fileName: 'kits.html',
+    dataPage: 'kits',
+    navId: 'navKits',
+    title: 'Kits de Produtos | Bling ERP FLR',
+    category: 'Cadastros',
+    viewName: 'Kits de Produtos',
+    btnLabel: 'Novo Kit'
+  },
+  {
+    fileName: 'orcamentos.html',
+    dataPage: 'quotes',
+    navId: 'navQuotes',
+    title: 'Construtor de Orçamentos | Bling ERP FLR',
+    category: 'Vendas & Comercial',
+    viewName: 'Orçamentos',
+    btnLabel: 'Novo Orçamento'
   }
 ];
 
@@ -143,4 +161,4 @@ pages.forEach(p => {
   console.log(`✓ Página gerada com tabela ativa: ${p.fileName} (Módulo: ${p.dataPage})`);
 });
 
-console.log('\n🎉 Todas as 12 páginas de módulos sincronizadas com visão de dados ativa!');
+console.log('\n🎉 Todas as 14 páginas de módulos sincronizadas com visão de dados ativa!');

@@ -198,6 +198,30 @@ const MODULE_PERMISSION_DEFINITIONS = [
     actions: [
       { key: 'manage_connection', label: 'Conectar / Desconectar e Renovar OAuth' }
     ]
+  },
+  {
+    key: 'kits',
+    title: 'Kits de Produtos',
+    category: 'Cadastros',
+    icon: 'fa-layer-group',
+    actions: [
+      { key: 'view', label: 'Visualizar Kits' },
+      { key: 'create', label: 'Criar Kit' },
+      { key: 'edit', label: 'Editar Kit' },
+      { key: 'delete', label: 'Excluir Kit' }
+    ]
+  },
+  {
+    key: 'quotes',
+    title: 'Orçamentos',
+    category: 'Vendas & Comercial',
+    icon: 'fa-file-invoice-dollar',
+    actions: [
+      { key: 'view', label: 'Visualizar Orçamentos' },
+      { key: 'create', label: 'Criar Orçamento' },
+      { key: 'edit', label: 'Editar Orçamento' },
+      { key: 'delete', label: 'Excluir Orçamento' }
+    ]
   }
 ];
 
@@ -346,6 +370,31 @@ const MODULE_CONFIG = {
     filterTypeLabel: 'Tipo',
     filterTypeOptions: [{ val: 'interno', label: 'Vendedor Interno' }],
     filterSituationOptions: [{ val: 'A', label: 'Ativos' }]
+  },
+  kits: {
+    title: 'Kits de Produtos',
+    category: 'Cadastros',
+    endpoint: 'kits',
+    demoKey: 'produtos',
+    columns: ['Código', 'Nome do Kit', 'Itens', 'Preço Total', 'Preço Fixo?', 'Ativo', 'Ações'],
+    filterTypeLabel: 'Status',
+    filterTypeOptions: [{ val: 'true', label: 'Ativos' }, { val: 'false', label: 'Inativos' }],
+    filterSituationOptions: []
+  },
+  quotes: {
+    title: 'Orçamentos',
+    category: 'Vendas & Comercial',
+    endpoint: 'orcamentos',
+    demoKey: 'pedidos',
+    columns: ['Número', 'Cliente', 'Título', 'Data', 'Validade', 'Total', 'Status', 'Bling?', 'Ações'],
+    filterTypeLabel: 'Status',
+    filterTypeOptions: [
+      { val: 'rascunho', label: 'Rascunho' },
+      { val: 'apresentado', label: 'Apresentado' },
+      { val: 'aprovado', label: 'Aprovado' },
+      { val: 'cancelado', label: 'Cancelado' }
+    ],
+    filterSituationOptions: []
   }
 };
 
@@ -638,6 +687,8 @@ async function showDashboard() {
     else if (path.includes('contas-receber')) initialModule = 'receivables';
     else if (path.includes('contas-pagar')) initialModule = 'payables';
     else if (path.includes('estoque')) initialModule = 'stock';
+    else if (path.includes('kits')) initialModule = 'kits';
+    else if (path.includes('orcamentos') || path.includes('quotes')) initialModule = 'quotes';
     else initialModule = 'dashboard';
   }
 
@@ -661,7 +712,9 @@ window.applyUIPermissions = function() {
     navServiceOrders: 'serviceOrders',
     navReceivables: 'receivables',
     navPayables: 'payables',
-    navStock: 'stock'
+    navStock: 'stock',
+    navKits: 'kits',
+    navQuotes: 'quotes'
   };
 
   Object.entries(navPermissionMap).forEach(([elemId, modKey]) => {
@@ -721,7 +774,9 @@ window.switchERPView = async function(moduleKey) {
     serviceOrders: 'navServiceOrders',
     stock: 'navStock',
     categories: 'navCategories',
-    sellers: 'navSellers'
+    sellers: 'navSellers',
+    kits: 'navKits',
+    quotes: 'navQuotes'
   };
 
   const currentNavElem = document.getElementById(activeNavMap[moduleKey]);
@@ -789,6 +844,14 @@ window.switchERPView = async function(moduleKey) {
         if (elements.lblNewItemBtn) elements.lblNewItemBtn.innerHTML = '<i class="fa-solid fa-money-bill-wave"></i> Nova Conta a Pagar';
         elements.btnOpenNewItemModal.onclick = () => openNewFinanceModal('P');
         elements.btnOpenNewItemModal.title = 'Lançar Conta a Pagar / Despesa';
+      } else if (moduleKey === 'kits') {
+        if (elements.lblNewItemBtn) elements.lblNewItemBtn.innerHTML = '<i class="fa-solid fa-layer-group"></i> Novo Kit';
+        elements.btnOpenNewItemModal.onclick = () => openKitBuilder();
+        elements.btnOpenNewItemModal.title = 'Criar Novo Kit de Produtos';
+      } else if (moduleKey === 'quotes') {
+        if (elements.lblNewItemBtn) elements.lblNewItemBtn.innerHTML = '<i class="fa-solid fa-file-invoice-dollar"></i> Novo Orçamento';
+        elements.btnOpenNewItemModal.onclick = () => openQuoteBuilder();
+        elements.btnOpenNewItemModal.title = 'Criar Novo Orçamento';
       } else {
         elements.btnOpenNewItemModal.style.display = 'none';
       }
@@ -1040,6 +1103,21 @@ function updateModuleKPIs(moduleKey, items) {
     if (elements.dynStatLabel4) elements.dynStatLabel4.textContent = 'Total em Notas (R$)';
     const sum = items.reduce((acc, n) => acc + (n.valorNota || n.valorTotal || n.total || 0), 0);
     if (elements.dynStatVal4) elements.dynStatVal4.textContent = formatCurrency(sum);
+  } else if (moduleKey === 'kits') {
+    if (elements.dynStatLabel2) elements.dynStatLabel2.textContent = 'Kits Ativos';
+    if (elements.dynStatVal2) elements.dynStatVal2.textContent = items.filter(i => i.ativo !== false).length;
+    if (elements.dynStatLabel3) elements.dynStatLabel3.textContent = 'Com Preço Fixo';
+    if (elements.dynStatVal3) elements.dynStatVal3.textContent = items.filter(i => i.usar_preco_fixo).length;
+    if (elements.dynStatLabel4) elements.dynStatLabel4.textContent = 'Total de Produtos em Kits';
+    if (elements.dynStatVal4) elements.dynStatVal4.textContent = items.reduce((s, k) => s + (k.itens || []).length, 0);
+  } else if (moduleKey === 'quotes') {
+    if (elements.dynStatLabel2) elements.dynStatLabel2.textContent = 'Aprovados';
+    if (elements.dynStatVal2) elements.dynStatVal2.textContent = items.filter(i => i.status === 'aprovado').length;
+    if (elements.dynStatLabel3) elements.dynStatLabel3.textContent = 'Total Orçado';
+    const sumOrc = items.reduce((acc, q) => acc + (q.total_final || 0), 0);
+    if (elements.dynStatVal3) elements.dynStatVal3.textContent = formatCurrency(sumOrc);
+    if (elements.dynStatLabel4) elements.dynStatLabel4.textContent = 'Exportados ao Bling';
+    if (elements.dynStatVal4) elements.dynStatVal4.textContent = items.filter(i => i.bling_pedido_id || i.bling_proposta_id).length;
   }
 }
 
@@ -1276,6 +1354,71 @@ function generateRowHTML(mod, item) {
     `;
   }
 
+  // Kits de Produtos
+  if (mod === 'kits') {
+    const totalItens = (item.itens || []).length;
+    const totalCalc = (item.itens || []).reduce((s, it) => s + (it.quantity * it.unit_price), 0);
+    const precoFinal = item.usar_preco_fixo ? parseFloat(item.preco_fixo || 0) : totalCalc;
+    const ativoClass = item.ativo !== false ? 'active' : 'inactive';
+    const ativoLabel = item.ativo !== false ? 'Ativo' : 'Inativo';
+    return `
+      <tr>
+        <td><span class="text-mono" style="font-size:11px;">${escapeHtml(item.codigo || '—')}</span></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${item.imagem_url ? `<img src="${item.imagem_url}" style="width:32px;height:32px;border-radius:4px;object-fit:cover;" onerror="this.style.display='none'">` : '<i class="fa-solid fa-layer-group" style="color:#F59E0B;font-size:18px;width:32px;text-align:center;"></i>'}
+            <strong>${escapeHtml(item.nome || '—')}</strong>
+          </div>
+          ${item.descricao ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${escapeHtml(item.descricao.substring(0,60))}...</div>` : ''}
+        </td>
+        <td style="text-align:center;"><span class="badge-tag-custom">${totalItens} produto(s)</span></td>
+        <td style="text-align:right;"><strong class="text-emerald">${formatCurrency(precoFinal)}</strong></td>
+        <td style="text-align:center;">${item.usar_preco_fixo ? '<span style="color:#6366F1;font-size:11px;font-weight:700;">✓ Fixo</span>' : '<span style="color:var(--text-muted);font-size:11px;">Calculado</span>'}</td>
+        <td style="text-align:center;"><span class="badge-status ${ativoClass}">● ${ativoLabel}</span></td>
+        <td style="text-align:right;" onclick="event.stopPropagation();">
+          <button class="btn-view-action" onclick="openKitBuilder(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+            <i class="fa-solid fa-pen"></i> Editar
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
+  // Orçamentos (Fast Quote Builder)
+  if (mod === 'quotes') {
+    const statusLabels = { rascunho: 'Rascunho', apresentado: 'Apresentado', aprovado: 'Aprovado', cancelado: 'Cancelado' };
+    const statusColors = { rascunho: 'pending', apresentado: 'pending', aprovado: 'active', cancelado: 'inactive' };
+    const statusClass = statusColors[item.status] || 'pending';
+    const statusLabel = statusLabels[item.status] || item.status;
+    const dataValidade = item.data_validade ? formatDate(item.data_validade) : '—';
+    const isBlingExported = !!(item.bling_pedido_id || item.bling_proposta_id);
+    const blingBadge = isBlingExported
+      ? `<span style="font-size:10px;background:#DBEAFE;color:#1E40AF;padding:2px 6px;border-radius:10px;font-weight:700;">✓ Bling</span>`
+      : `<span style="font-size:10px;color:var(--text-muted);">—</span>`;
+    return `
+      <tr onclick="openQuoteBuilder(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+        <td><span class="text-mono font-bold" style="color:var(--bling-green-dark);">${escapeHtml(item.numero || '—')}</span></td>
+        <td><strong>${escapeHtml(item.bling_contact_nome || '—')}</strong></td>
+        <td style="font-size:12px;color:var(--text-secondary);">${escapeHtml(item.titulo || '—')}</td>
+        <td><span class="text-mono">${formatDate(item.data_emissao)}</span></td>
+        <td><span class="text-mono">${dataValidade}</span></td>
+        <td style="text-align:right;"><strong class="text-emerald">${formatCurrency(item.total_final || 0)}</strong></td>
+        <td style="text-align:center;"><span class="badge-status ${statusClass}">● ${statusLabel}</span></td>
+        <td style="text-align:center;">${blingBadge}</td>
+        <td style="text-align:right;" onclick="event.stopPropagation();">
+          <button class="btn-view-action" onclick="openQuoteBuilder(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+            <i class="fa-solid fa-pen"></i> Editar
+          </button>
+          ${item.status === 'aprovado' && !isBlingExported ? `
+            <button class="btn-view-action" style="color:var(--bling-green-dark);border-color:rgba(0,168,104,.25);margin-left:4px;"
+              onclick="event.stopPropagation(); document.getElementById('quoteId').value='${item.id}'; document.getElementById('quoteStatus').value='aprovado'; openExportBlingModal();">
+              <i class="fa-solid fa-upload"></i> Bling
+            </button>` : ''}
+        </td>
+      </tr>
+    `;
+  }
+
   // Fallback genérico
   return `
     <tr onclick="openClientDetails(${item.id})">
@@ -1287,6 +1430,7 @@ function generateRowHTML(mod, item) {
     </tr>
   `;
 }
+
 
 function updatePagination(total) {
   if (total === 0) {
@@ -2891,11 +3035,12 @@ function openModal(modal) { modal.classList.add('active'); }
 function closeModal(modal) { modal.classList.remove('active'); }
 
 function showNotification(message, type = 'info') {
+  const container = document.getElementById('toastContainer') || elements.toastContainer || document.body;
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info');
+  const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-exclamation' : (type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info'));
   toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHtml(message)}</span>`;
-  elements.toastContainer.appendChild(toast);
+  container.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transform = 'translateX(100%)';
@@ -2903,6 +3048,29 @@ function showNotification(message, type = 'info') {
     setTimeout(() => toast.remove(), 300);
   }, 4000);
 }
+const showToast = showNotification;
+window.showToast = showNotification;
+window.showNotification = showNotification;
+
+async function apiRequest(url, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+  if (state.authToken) {
+    headers['Authorization'] = `Bearer ${state.authToken}`;
+  }
+  const response = await fetch(url, {
+    ...options,
+    headers
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || data.error || `Erro HTTP ${response.status}`);
+  }
+  return data;
+}
+window.apiRequest = apiRequest;
 
 function showLoading(isLoading) {
   elements.tableLoadingState.style.display = isLoading ? 'flex' : 'none';
@@ -3516,52 +3684,357 @@ window.handleSaveClient = async function() {
 // CADASTRO E EDIÇÃO DE PEDIDOS DE VENDA
 // ==========================================================================
 
+// ==========================================================================
+// AUTOCOMPLETE DE CLIENTE DO BLING — Busca em /api/contatos
+// ==========================================================================
+
+let _clientSearchTimer = null;
+let _clientAutocompleteData = [];
+let _clientHighlightIndex = -1;
+
+async function searchBlingClientsAPI(term) {
+  // Se estiver em Modo Demo, busca da base de demonstração
+  if (state.dataSource === 'demo') {
+    try {
+      const res = await fetch('/api/demo-data');
+      if (res.ok) {
+        const json = await res.json();
+        const clients = json.clientes || [];
+        const lower = term.toLowerCase();
+        return clients.filter(c =>
+          (c.nome && c.nome.toLowerCase().includes(lower)) ||
+          (c.fantasia && c.fantasia.toLowerCase().includes(lower)) ||
+          (c.numeroDocumento && c.numeroDocumento.includes(lower))
+        ).slice(0, 10);
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  try {
+    const res = await fetch(`/api/contatos?pesquisa=${encodeURIComponent(term)}&limite=10&criterio=1`, {
+      headers: { 'Authorization': `Bearer ${state.authToken}` }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { isError: true, unauth: res.status === 401 || err.error?.includes('autenticado'), message: err.error || err.message };
+    }
+    const json = await res.json();
+    return json?.data || [];
+  } catch (err) {
+    return { isError: true, message: err.message };
+  }
+}
+
+function renderClientDropdown(items, dropdown) {
+  if (!dropdown) return;
+  if (items && items.isError) {
+    if (items.unauth || !state.isBlingAuthenticated) {
+      dropdown.innerHTML = `<div class="client-autocomplete-item" style="cursor:default;padding:12px;">
+        <span class="ac-name" style="color:var(--bling-orange);font-size:12px;"><i class="fa-solid fa-triangle-exclamation"></i> Integração Bling desconectada</span>
+        <span class="ac-doc" style="margin-top:4px;color:var(--text-secondary);">Faça login no Bling pelo ícone <i class="fa-solid fa-key"></i> no cabeçalho ou alterne para o <b>Modo Demo</b> no topo.</span>
+      </div>`;
+    } else {
+      dropdown.innerHTML = `<div class="client-autocomplete-item"><span class="ac-name" style="color:var(--text-muted);font-weight:400;">Erro ao consultar clientes no Bling.</span></div>`;
+    }
+    dropdown.classList.add('open');
+    return;
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    dropdown.innerHTML = `<div class="client-autocomplete-item"><span class="ac-name" style="color:var(--text-muted);font-weight:400;">Nenhum cliente encontrado no Bling.</span></div>`;
+  } else {
+    dropdown.innerHTML = items.map((c, i) => {
+      const nome = c.nome || c.fantasia || '—';
+      const doc = c.numeroDocumento ? `CPF/CNPJ: ${c.numeroDocumento}` : '';
+      return `<div class="client-autocomplete-item" data-idx="${i}"
+                   onmousedown="selectOrderClient(${i})"
+                   onmouseover="highlightClientItem(${i})">
+        <span class="ac-name">${nome}</span>
+        ${doc ? `<span class="ac-doc">${doc}</span>` : ''}
+      </div>`;
+    }).join('');
+  }
+  dropdown.classList.add('open');
+}
+
+window.onOrderClientSearch = function(value) {
+  const dropdown = document.getElementById('clientAutocompleteDropdown');
+  clearTimeout(_clientSearchTimer);
+  _clientHighlightIndex = -1;
+  // Mantém o texto atual digitado
+  document.getElementById('ordClienteId').value = '';
+  document.getElementById('ordCliente').value = value.trim();
+  if (value.length < 2) {
+    if (dropdown) dropdown.classList.remove('open');
+    return;
+  }
+  if (dropdown) {
+    dropdown.innerHTML = `<div class="client-autocomplete-loading"><i class="fa-solid fa-spinner fa-spin"></i> Buscando clientes...</div>`;
+    dropdown.classList.add('open');
+  }
+  _clientSearchTimer = setTimeout(async () => {
+    _clientAutocompleteData = await searchBlingClientsAPI(value);
+    renderClientDropdown(_clientAutocompleteData, dropdown);
+  }, 320);
+};
+
+window.selectOrderClient = function(idx) {
+  const client = _clientAutocompleteData[idx];
+  if (!client) return;
+  const nome = client.nome || client.fantasia || '';
+  const searchInput = document.getElementById('ordClienteSearch');
+  if (searchInput) searchInput.value = nome;
+  document.getElementById('ordClienteId').value = client.id || '';
+  document.getElementById('ordCliente').value = nome;
+  const dropdown = document.getElementById('clientAutocompleteDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+  _clientHighlightIndex = -1;
+};
+
+window.highlightClientItem = function(idx) {
+  _clientHighlightIndex = idx;
+  document.querySelectorAll('#clientAutocompleteDropdown .client-autocomplete-item')
+    .forEach((el, i) => el.classList.toggle('highlighted', i === idx));
+};
+
+function initOrderClientKeyNav() {
+  const input = document.getElementById('ordClienteSearch');
+  const dropdown = document.getElementById('clientAutocompleteDropdown');
+  if (!input || !dropdown) return;
+  input.addEventListener('keydown', (e) => {
+    const items = dropdown.querySelectorAll('.client-autocomplete-item');
+    if (!dropdown.classList.contains('open') || items.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _clientHighlightIndex = Math.min(_clientHighlightIndex + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle('highlighted', i === _clientHighlightIndex));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _clientHighlightIndex = Math.max(_clientHighlightIndex - 1, 0);
+      items.forEach((el, i) => el.classList.toggle('highlighted', i === _clientHighlightIndex));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (_clientHighlightIndex >= 0) selectOrderClient(_clientHighlightIndex);
+    } else if (e.key === 'Escape') {
+      dropdown.classList.remove('open');
+    }
+  });
+  input.addEventListener('blur', () => {
+    setTimeout(() => dropdown.classList.remove('open'), 200);
+  });
+}
+
+// ==========================================================================
+// ITENS DO PEDIDO — Tabela Dinâmica
+// ==========================================================================
+
+function _makeOrderItemRow(num) {
+  return `
+    <tr class="order-item-row">
+      <td class="item-num">${num}</td>
+      <td><input type="text" class="order-item-input item-desc" placeholder="Pesquise por código, descrição ou GTIN" oninput="recalcOrderTotals()"></td>
+      <td><input type="text" class="order-item-input item-code"></td>
+      <td><input type="text" class="order-item-input item-un" value="UN"></td>
+      <td><input type="number" class="order-item-input item-qty" value="1" min="0" step="0.001" oninput="recalcOrderTotals()"></td>
+      <td><input type="number" class="order-item-input item-preco-lista" value="0.00" step="0.01" oninput="recalcOrderTotals()"></td>
+      <td><input type="number" class="order-item-input item-desc-pct" value="0" min="0" max="100" step="0.01" oninput="recalcOrderTotals()"></td>
+      <td><input type="number" class="order-item-input item-preco-un" value="0.00" step="0.01" oninput="recalcOrderTotals()"></td>
+      <td><input type="number" class="order-item-input item-total" value="0.00" step="0.01" readonly></td>
+      <td><button type="button" class="order-item-del-btn" onclick="removeOrderItem(this)" title="Remover"><i class="fa-solid fa-trash-can"></i></button></td>
+    </tr>`;
+}
+
+window.addOrderItem = function() {
+  const tbody = document.getElementById('orderItemsBody');
+  if (!tbody) return;
+  const count = tbody.querySelectorAll('.order-item-row').length + 1;
+  tbody.insertAdjacentHTML('beforeend', _makeOrderItemRow(count));
+};
+
+window.removeOrderItem = function(btn) {
+  const tbody = document.getElementById('orderItemsBody');
+  if (!tbody) return;
+  if (tbody.querySelectorAll('.order-item-row').length <= 1) return;
+  btn.closest('.order-item-row').remove();
+  // Renumerar
+  tbody.querySelectorAll('.order-item-row').forEach((row, i) => {
+    const numCell = row.querySelector('.item-num');
+    if (numCell) numCell.textContent = i + 1;
+  });
+  recalcOrderTotals();
+};
+
+window.recalcOrderTotals = function() {
+  const rows = document.querySelectorAll('#orderItemsBody .order-item-row');
+  let nItens = 0, somaQtd = 0, totalItens = 0, totalDescItens = 0;
+
+  rows.forEach(row => {
+    const qty        = parseFloat(row.querySelector('.item-qty')?.value)          || 0;
+    const precoLista = parseFloat(row.querySelector('.item-preco-lista')?.value)  || 0;
+    const descPct    = parseFloat(row.querySelector('.item-desc-pct')?.value)     || 0;
+    let   precoUn    = parseFloat(row.querySelector('.item-preco-un')?.value)     || 0;
+
+    // Se lista definida, recalcular preço unitário automaticamente
+    if (precoLista > 0) {
+      precoUn = precoLista * (1 - descPct / 100);
+      const puInput = row.querySelector('.item-preco-un');
+      if (puInput && document.activeElement !== puInput) puInput.value = precoUn.toFixed(2);
+    }
+
+    const rowTotal    = qty * precoUn;
+    const rowDescVal  = qty * Math.max(0, precoLista - precoUn);
+    const totInput    = row.querySelector('.item-total');
+    if (totInput) totInput.value = rowTotal.toFixed(2);
+
+    if (qty > 0 || precoUn > 0) nItens++;
+    somaQtd     += qty;
+    totalItens  += rowTotal;
+    totalDescItens += rowDescVal;
+  });
+
+  const descVenda      = parseFloat(document.getElementById('totDesconto')?.value)      || 0;
+  const outrasDespesas = parseFloat(document.getElementById('totOutrasDespesas')?.value) || 0;
+  const frete          = parseFloat(document.getElementById('ordFrete')?.value)          || 0;
+  const totalVenda     = Math.max(0, totalItens - descVenda + outrasDespesas + frete);
+
+  const fmt = n => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+
+  set('totNItens',    nItens);
+  set('totSomaQtd',   fmt(somaQtd));
+  set('totDescItens', fmt(totalDescItens));
+  set('totDescTotal', fmt(descVenda));
+  set('totTotalItens', fmt(totalItens));
+  set('totValorTotal', fmt(totalVenda));
+};
+
+window.switchOrderTab = function(tab) {
+  const isItens = tab === 'itens';
+  const tabItens = document.getElementById('tabItens');
+  const tabComissoes = document.getElementById('tabComissoes');
+  if (tabItens)     tabItens.style.display     = isItens ? '' : 'none';
+  if (tabComissoes) tabComissoes.style.display  = isItens ? 'none' : '';
+  document.getElementById('tabBtnItens')?.classList.toggle('active', isItens);
+  document.getElementById('tabBtnComissoes')?.classList.toggle('active', !isItens);
+};
+
+// ==========================================================================
+// ABRIR MODAL DE PEDIDO DE VENDA
+// ==========================================================================
+
 window.openNewOrderModal = function() {
   state.editingId = null;
+  _clientAutocompleteData = [];
+  _clientHighlightIndex = -1;
+
+  // Reset form
   const form = document.getElementById('formNewOrder');
   if (form) form.reset();
+
+  // Reset tabela de itens (1 linha limpa)
+  const tbody = document.getElementById('orderItemsBody');
+  if (tbody) tbody.innerHTML = _makeOrderItemRow(1);
+
+  // Reset totais
+  const totIds = ['totNItens','totSomaQtd','totDescTotal','totComissoes','totDescItens','totTotalItens','totValorTotal'];
+  totIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = id === 'totNItens' ? '0' : (id === 'totComissoes' ? '-0,00' : '0,00');
+  });
+
+  // Data de hoje
+  const hoje = new Date().toISOString().split('T')[0];
   const dataInput = document.getElementById('ordData');
-  if (dataInput) dataInput.value = new Date().toISOString().split('T')[0];
+  if (dataInput) dataInput.value = hoje;
+
+  // Restaurar banner
+  const banner = document.getElementById('orderInfoBanner');
+  if (banner) banner.style.display = '';
+
+  // Tab inicial
+  switchOrderTab('itens');
+
+  // Título padrão
+  const titleEl = document.getElementById('orderModalTitle');
+  if (titleEl) titleEl.textContent = 'Pedido de venda';
+
+  // Botão salvar
   const btn = document.getElementById('btnSubmitOrder');
-  if (btn) btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar Pedido de Venda';
+  if (btn) btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar';
+
+  // Abrir modal
   const modal = document.getElementById('modalNewOrder');
   if (modal) openModal(modal);
+
+  // Focar campo cliente
+  setTimeout(() => {
+    const clientInput = document.getElementById('ordClienteSearch');
+    if (clientInput) clientInput.focus();
+  }, 120);
 };
+
+// ==========================================================================
+// SALVAR PEDIDO DE VENDA
+// ==========================================================================
 
 window.handleSaveOrder = async function() {
   const btn = document.getElementById('btnSubmitOrder');
-  const numero = document.getElementById('ordNumero').value.trim();
-  const data = document.getElementById('ordData').value;
-  const cliente = document.getElementById('ordCliente').value.trim();
-  const vendedor = document.getElementById('ordVendedor').value.trim();
-  const situacao = document.getElementById('ordSituacao').value;
-  const itemDesc = document.getElementById('ordItemDesc').value.trim();
-  const qtd = parseInt(document.getElementById('ordQtd').value, 10) || 1;
-  const total = parseFloat(document.getElementById('ordValorTotal').value) || 0;
+  const clienteNome = (document.getElementById('ordCliente')?.value?.trim()) ||
+                      (document.getElementById('ordClienteSearch')?.value?.trim());
+  const clienteId   = document.getElementById('ordClienteId')?.value?.trim();
 
-  if (!cliente || !total) {
-    showNotification('Preencha os campos obrigatórios: Cliente e Valor Total.', 'error');
+  if (!clienteNome) {
+    showNotification('Selecione um Cliente para continuar.', 'error');
+    document.getElementById('ordClienteSearch')?.focus();
     return;
   }
 
   const isEditing = !!state.editingId;
-  btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isEditing ? 'Atualizando' : 'Salvando'} Pedido...`;
+  if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isEditing ? 'Atualizando' : 'Salvando'}...`; }
+
+  // Coletar itens da tabela dinâmica
+  const itemRows = document.querySelectorAll('#orderItemsBody .order-item-row');
+  const itens = Array.from(itemRows).map(row => ({
+    descricao:      row.querySelector('.item-desc')?.value?.trim() || '',
+    codigo:         row.querySelector('.item-code')?.value?.trim() || '',
+    unidade:        row.querySelector('.item-un')?.value?.trim()   || 'UN',
+    quantidade:     parseFloat(row.querySelector('.item-qty')?.value)        || 0,
+    precoUnitario:  parseFloat(row.querySelector('.item-preco-un')?.value)   || 0,
+    desconto:       parseFloat(row.querySelector('.item-desc-pct')?.value)   || 0,
+    precoTotal:     parseFloat(row.querySelector('.item-total')?.value)      || 0,
+  })).filter(it => it.descricao || it.quantidade > 0);
+
+  // Total da venda (do campo calculado)
+  const totalStr = document.getElementById('totValorTotal')?.value?.replace(/\./g, '').replace(',', '.') || '0';
+  const total = parseFloat(totalStr) || 0;
 
   try {
     const payload = {
-      numero: numero ? parseInt(numero, 10) : Math.floor(1000 + Math.random() * 9000),
-      data,
-      cliente: { nome: cliente },
-      vendedor,
-      situacao,
-      itemDescricao: itemDesc,
-      itensQtd: qtd,
-      total
+      numero:           document.getElementById('ordNumero')?.value ? parseInt(document.getElementById('ordNumero').value) : undefined,
+      data:             document.getElementById('ordData')?.value,
+      cliente:          clienteId ? { id: parseInt(clienteId), nome: clienteNome } : { nome: clienteNome },
+      vendedor:         document.getElementById('ordVendedor')?.value?.trim()       || undefined,
+      situacao:         document.getElementById('ordSituacao')?.value               || 'Em andamento',
+      itens:            itens.length > 0 ? itens : [{ descricao: 'Item do Pedido', quantidade: 1, precoUnitario: total }],
+      total,
+      desconto:         parseFloat(document.getElementById('totDesconto')?.value)   || 0,
+      outrasDespesas:   parseFloat(document.getElementById('totOutrasDespesas')?.value) || 0,
+      frete:            parseFloat(document.getElementById('ordFrete')?.value)      || 0,
+      condPagamento:    document.getElementById('ordCondPagamento')?.value?.trim()  || undefined,
+      observacoes:      document.getElementById('ordObservacoes')?.value?.trim()    || undefined,
+      observacoesInternas: document.getElementById('ordObsInternas')?.value?.trim() || undefined,
+      dataSaida:        document.getElementById('ordDataSaida')?.value              || undefined,
+      dataPrevista:     document.getElementById('ordDataPrevista')?.value           || undefined,
+      pedidoCompra:     document.getElementById('ordPedidoCompra')?.value?.trim()   || undefined,
+      // Campos de compatibilidade para exibição na tabela local
+      itemDescricao:    itens[0]?.descricao || 'Item do Pedido',
+      itensQtd:         itens.reduce((s, i) => s + i.quantidade, 0) || 1,
     };
 
     const endpoint = isEditing ? `/api/pedidos-vendas/${state.editingId}` : '/api/pedidos-vendas';
-    const method = isEditing ? 'PUT' : 'POST';
+    const method   = isEditing ? 'PUT' : 'POST';
 
     const res = await fetch(endpoint, {
       method,
@@ -3588,8 +4061,7 @@ window.handleSaveOrder = async function() {
   } catch (err) {
     showNotification(err.message, 'error');
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar Pedido de Venda';
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar'; }
   }
 };
 
@@ -3854,17 +4326,68 @@ window.openEditModal = function(moduleKey, itemId) {
   } else if (moduleKey === 'orders' || moduleKey === 'proposals') {
     openNewOrderModal();
     state.editingId = item.id;
-    document.getElementById('ordNumero').value = item.numero || item.id;
-    document.getElementById('ordData').value = item.data || item.dataEmissao || new Date().toISOString().split('T')[0];
-    const clientName = typeof item.cliente === 'object' ? item.cliente?.nome : (item.cliente || '');
-    document.getElementById('ordCliente').value = clientName;
-    document.getElementById('ordVendedor').value = item.vendedor || '';
-    document.getElementById('ordSituacao').value = item.situacao || 'Em andamento';
-    document.getElementById('ordItemDesc').value = item.itemDescricao || 'Item do Pedido';
-    document.getElementById('ordQtd').value = item.itensQtd || 1;
-    document.getElementById('ordValorTotal').value = item.total || 0;
+    // Número e datas
+    const numEl = document.getElementById('ordNumero');
+    if (numEl) numEl.value = item.numero || '';
+    const dataEl = document.getElementById('ordData');
+    if (dataEl) dataEl.value = item.data || item.dataEmissao || new Date().toISOString().split('T')[0];
+    const dataSaidaEl = document.getElementById('ordDataSaida');
+    if (dataSaidaEl) dataSaidaEl.value = item.dataSaida || '';
+    const dataPrevEl = document.getElementById('ordDataPrevista');
+    if (dataPrevEl) dataPrevEl.value = item.dataPrevista || '';
+    // Cliente
+    const clientName = typeof item.cliente === 'object' ? (item.cliente?.nome || '') : (item.cliente || '');
+    const clientId   = typeof item.cliente === 'object' ? (item.cliente?.id   || '') : '';
+    const searchEl = document.getElementById('ordClienteSearch');
+    if (searchEl) searchEl.value = clientName;
+    const hiddenNome = document.getElementById('ordCliente');
+    if (hiddenNome) hiddenNome.value = clientName;
+    const hiddenId = document.getElementById('ordClienteId');
+    if (hiddenId) hiddenId.value = clientId;
+    // Outros campos
+    const vendEl = document.getElementById('ordVendedor');
+    if (vendEl) vendEl.value = item.vendedor || '';
+    const sitEl = document.getElementById('ordSituacao');
+    if (sitEl) sitEl.value = item.situacao || 'Em andamento';
+    const obsEl = document.getElementById('ordObservacoes');
+    if (obsEl) obsEl.value = item.observacoes || '';
+    const obsIntEl = document.getElementById('ordObsInternas');
+    if (obsIntEl) obsIntEl.value = item.observacoesInternas || '';
+    // Preencher itens na tabela
+    if (item.itens && item.itens.length > 0) {
+      const tbody = document.getElementById('orderItemsBody');
+      if (tbody) {
+        tbody.innerHTML = '';
+        item.itens.forEach((it, idx) => {
+          tbody.insertAdjacentHTML('beforeend', _makeOrderItemRow(idx + 1));
+          const rows = tbody.querySelectorAll('.order-item-row');
+          const row  = rows[idx];
+          if (row) {
+            row.querySelector('.item-desc').value       = it.descricao      || '';
+            row.querySelector('.item-code').value       = it.codigo         || '';
+            row.querySelector('.item-un').value         = it.unidade        || 'UN';
+            row.querySelector('.item-qty').value        = it.quantidade     || 1;
+            row.querySelector('.item-preco-lista').value = it.precoLista    || 0;
+            row.querySelector('.item-desc-pct').value   = it.desconto       || 0;
+            row.querySelector('.item-preco-un').value   = it.precoUnitario  || 0;
+          }
+        });
+      }
+    } else {
+      // Compatibilidade: preencher 1ª linha com dados antigos
+      const firstRow = document.querySelector('#orderItemsBody .order-item-row');
+      if (firstRow) {
+        firstRow.querySelector('.item-desc').value    = item.itemDescricao || 'Item do Pedido';
+        firstRow.querySelector('.item-qty').value     = item.itensQtd     || 1;
+        firstRow.querySelector('.item-preco-un').value = item.total       || 0;
+      }
+    }
+    recalcOrderTotals();
+    // Título e botão
+    const titleEl = document.getElementById('orderModalTitle');
+    if (titleEl) titleEl.textContent = `Pedido de venda - ${item.numero || item.id}`;
     const btn = document.getElementById('btnSubmitOrder');
-    if (btn) btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Atualizar Pedido no Bling';
+    if (btn) btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Atualizar Pedido';
   } else if (moduleKey === 'serviceOrders') {
     openNewServiceOrderModal();
     state.editingId = item.id;
@@ -3958,11 +4481,899 @@ document.addEventListener('DOMContentLoaded', () => {
   bindClose('btnCloseNewClientModal', 'modalNewClient');
   bindClose('btnCloseNewClientModalFooter', 'modalNewClient');
   bindClose('btnCloseNewOrderModal', 'modalNewOrder');
-  bindClose('btnCloseNewOrderModalFooter', 'modalNewOrder');
+  bindClose('btnCloseNewOrderModalFooter', 'modalNewOrder'); // mantido por compatibilidade
+  // Inicializar navegação por teclado do autocomplete de cliente
+  initOrderClientKeyNav();
   bindClose('btnCloseNewOsModal', 'modalNewServiceOrder');
   bindClose('btnCloseNewOsModalFooter', 'modalNewServiceOrder');
   bindClose('btnCloseNewFinanceModal', 'modalNewFinance');
   bindClose('btnCloseNewFinanceModalFooter', 'modalNewFinance');
+
+  // ---- Kits & Quotes Modals ----
+  bindClose('btnCloseKitModal', 'modalKitBuilder');
+  bindClose('btnCloseQuoteModal', 'modalQuoteBuilder');
+  bindClose('btnCloseKitPicker', 'modalKitPicker');
+  bindClose('btnCloseKitProductPicker', 'modalKitProductPicker');
+  bindClose('btnCloseExportModal', 'modalExportBling');
+  bindClose('btnCloseQuotePrint', 'modalQuotePrint');
 });
 
+// ==========================================================================
+// MÓDULO: GESTÃO DE KITS DE PRODUTOS
+// ==========================================================================
+
+let kitItemCounter = 0;
+let kitProductSearchTimers = {};
+
+function openKitBuilder(kitData = null) {
+  const modal = document.getElementById('modalKitBuilder');
+  if (!modal) return;
+
+  // Limpar formulário
+  document.getElementById('kitId').value = '';
+  document.getElementById('kitNome').value = '';
+  document.getElementById('kitCodigo').value = '';
+  document.getElementById('kitDescricao').value = '';
+  document.getElementById('kitImagemUrl').value = '';
+  document.getElementById('kitUsarPrecoFixo').checked = false;
+  document.getElementById('kitPrecoFixo').value = '0';
+  document.getElementById('kitPrecoFixoWrapper').style.display = 'none';
+  document.getElementById('kitItemsBody').innerHTML = '';
+  document.getElementById('kitTotalCalculado').textContent = 'R$ 0,00';
+  document.getElementById('kitBuilderTitle').textContent = kitData ? 'Editar Kit' : 'Novo Kit de Produtos';
+  kitItemCounter = 0;
+
+  if (kitData) {
+    document.getElementById('kitId').value = kitData.id || '';
+    document.getElementById('kitNome').value = kitData.nome || '';
+    document.getElementById('kitCodigo').value = kitData.codigo || '';
+    document.getElementById('kitDescricao').value = kitData.descricao || '';
+    document.getElementById('kitImagemUrl').value = kitData.imagem_url || '';
+    if (kitData.usar_preco_fixo) {
+      document.getElementById('kitUsarPrecoFixo').checked = true;
+      document.getElementById('kitPrecoFixoWrapper').style.display = 'flex';
+      document.getElementById('kitPrecoFixo').value = kitData.preco_fixo || 0;
+    }
+    (kitData.itens || []).forEach(it => addKitItemRow(it));
+  } else {
+    addKitItemRow();
+  }
+
+  modal.classList.add('active');
+  recalcKitTotal();
+}
+
+function toggleKitPrecoFixo(checked) {
+  document.getElementById('kitPrecoFixoWrapper').style.display = checked ? 'flex' : 'none';
+}
+
+function addKitItemRow(item = null) {
+  // Usado ao CARREGAR kit existente (com dados já preenchidos)
+  if (item) {
+    addKitItemRowFromProduct({
+      id: item.bling_product_id || null,
+      nome: item.product_name || '',
+      codigo: item.product_code || '',
+      unidade: item.product_unit || 'UN',
+      preco: item.unit_price || 0
+    }, item.quantity || 1);
+  }
+  // Se chamado sem item, redireciona para o picker
+}
+
+// Linha manual (sem produto do Bling)
+function addKitManualRow() {
+  const idx = ++kitItemCounter;
+  const tbody = document.getElementById('kitItemsBody');
+  if (!tbody) return;
+  const row = document.createElement('tr');
+  row.id = `kitRow${idx}`;
+  row.innerHTML = `
+    <td style="text-align:center;color:var(--text-muted);font-size:11px;">${idx}</td>
+    <td>
+      <input type="text" class="kit-item-input" id="kitProdName${idx}" placeholder="Descrição do item..." style="font-weight:600;">
+      <input type="hidden" id="kitProdId${idx}" value="">
+    </td>
+    <td><input type="text" class="kit-item-input" id="kitProdCode${idx}" placeholder="-"></td>
+    <td><input type="text" class="kit-item-input" id="kitProdUnit${idx}" value="UN" style="max-width:40px;"></td>
+    <td><input type="number" class="kit-item-input" id="kitProdQty${idx}" value="1" min="0.001" step="0.001" style="text-align:right;" oninput="recalcKitTotal()"></td>
+    <td><input type="number" class="kit-item-input" id="kitProdPrice${idx}" value="0" min="0" step="0.01" style="text-align:right;" oninput="recalcKitTotal()"></td>
+    <td style="font-weight:600;text-align:right;padding-right:8px;" id="kitRowTotal${idx}">R$ 0,00</td>
+    <td>
+      <button type="button" onclick="removeKitItemRow(${idx})" style="background:none;border:none;cursor:pointer;color:#EF4444;padding:4px 6px;">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </td>
+  `;
+  tbody.appendChild(row);
+  document.getElementById(`kitProdName${idx}`)?.focus();
+  recalcKitTotal();
+}
+
+// Adiciona linha com produto já selecionado do Bling
+function addKitItemRowFromProduct(prod, qty = 1) {
+  const idx = ++kitItemCounter;
+  const tbody = document.getElementById('kitItemsBody');
+  if (!tbody) return;
+
+  const nomeProd = prod.nome || prod.descricao || '';
+  const codigo = prod.codigo || '';
+  const unidade = prod.unidade || 'UN';
+  const preco = parseFloat(prod.preco) || 0;
+
+  const row = document.createElement('tr');
+  row.id = `kitRow${idx}`;
+  row.innerHTML = `
+    <td style="text-align:center;color:var(--text-muted);font-size:11px;">${idx}</td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px;">
+        ${prod.imagemURL ? `<img src="${prod.imagemURL}" style="width:28px;height:28px;border-radius:4px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">` : '<i class="fa-solid fa-box" style="color:#6366F1;width:28px;text-align:center;"></i>'}
+        <div>
+          <input type="text" class="kit-item-input" id="kitProdName${idx}" value="${escapeAttr(nomeProd)}" style="font-weight:600;" placeholder="Nome do produto">
+          <input type="hidden" id="kitProdId${idx}" value="${prod.id || ''}">
+        </div>
+      </div>
+    </td>
+    <td><input type="text" class="kit-item-input" id="kitProdCode${idx}" value="${escapeAttr(codigo)}" placeholder="-" style="font-size:11px;"></td>
+    <td><input type="text" class="kit-item-input" id="kitProdUnit${idx}" value="${escapeAttr(unidade)}" style="max-width:40px;"></td>
+    <td><input type="number" class="kit-item-input" id="kitProdQty${idx}" value="${qty}" min="0.001" step="0.001" style="text-align:right;" oninput="recalcKitTotal()"></td>
+    <td><input type="number" class="kit-item-input" id="kitProdPrice${idx}" value="${preco}" min="0" step="0.01" style="text-align:right;" oninput="recalcKitTotal()"></td>
+    <td style="font-weight:600;text-align:right;padding-right:8px;" id="kitRowTotal${idx}">R$ 0,00</td>
+    <td>
+      <button type="button" onclick="removeKitItemRow(${idx})" style="background:none;border:none;cursor:pointer;color:#EF4444;padding:4px 6px;">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </td>
+  `;
+  tbody.appendChild(row);
+  recalcKitTotal();
+}
+
+function escapeAttr(str) {
+  return String(str || '').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ---- Modal de Seletor de Produto do Bling para Kit ----
+let kitProdPickerTimer = null;
+
+function openKitProductPickerModal() {
+  const modal = document.getElementById('modalKitProductPicker');
+  if (!modal) return;
+  // Reset
+  const searchInput = document.getElementById('kitProdPickerSearch');
+  if (searchInput) { searchInput.value = ''; searchInput.focus(); }
+  const results = document.getElementById('kitProdPickerResults');
+  if (results) results.innerHTML = `
+    <div style="text-align:center;color:var(--text-muted);padding:40px 20px;">
+      <i class="fa-solid fa-magnifying-glass" style="font-size:28px;margin-bottom:8px;display:block;"></i>
+      Digite pelo menos 2 caracteres para buscar produtos
+    </div>`;
+  modal.classList.add('active');
+  setTimeout(() => searchInput?.focus(), 100);
+}
+
+async function onKitProdPickerSearch(query) {
+  if (kitProdPickerTimer) clearTimeout(kitProdPickerTimer);
+  const resultsEl = document.getElementById('kitProdPickerResults');
+  if (!resultsEl) return;
+
+  if (!query || query.trim().length < 2) {
+    resultsEl.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:40px 20px;">
+      <i class="fa-solid fa-magnifying-glass" style="font-size:28px;margin-bottom:8px;display:block;"></i>
+      Digite pelo menos 2 caracteres para buscar produtos</div>`;
+    return;
+  }
+
+  resultsEl.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted);">
+    <i class="fa-solid fa-spinner fa-spin" style="font-size:22px;"></i><br><br>Buscando no catálogo Bling...</div>`;
+
+  kitProdPickerTimer = setTimeout(async () => {
+    try {
+      const res = await apiRequest(`/api/produtos?pesquisa=${encodeURIComponent(query.trim())}&limite=30`);
+      const prods = res?.data || [];
+      renderKitProdResults(prods, query);
+    } catch(e) {
+      resultsEl.innerHTML = `<div style="text-align:center;padding:30px;color:#EF4444;"><i class="fa-solid fa-triangle-exclamation" style="font-size:22px;"></i><br><br>Erro ao buscar: ${e.message}</div>`;
+    }
+  }, 380);
+}
+
+function renderKitProdResults(prods, query) {
+  const resultsEl = document.getElementById('kitProdPickerResults');
+  if (!resultsEl) return;
+
+  if (!prods.length) {
+    resultsEl.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted);">
+      <i class="fa-solid fa-box-open" style="font-size:28px;margin-bottom:8px;display:block;"></i>
+      Nenhum produto encontrado para "${escapeHtml(query)}"<br>
+      <small style="font-size:11px;">Tente um termo diferente ou use "Adicionar item manual"</small>
+    </div>`;
+    return;
+  }
+
+  resultsEl.innerHTML = `
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;padding:0 2px;">${prods.length} produto(s) encontrado(s). Clique para adicionar ao kit.</div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+    ${prods.map(p => {
+      const preco = typeof p.preco === 'object' ? (p.preco?.preco || 0) : parseFloat(p.preco || 0);
+      const estoque = typeof p.estoque === 'object' ? (p.estoque?.saldoFisicoTotal ?? '—') : (p.estoque ?? '—');
+      const imgUrl = p.imagemURL || (p.imagens && p.imagens[0]?.link) || '';
+      const unidade = p.unidade || 'UN';
+      const categoria = typeof p.categoria === 'object' ? (p.categoria?.descricao || '') : (p.categoria || '');
+
+      return `
+        <div onclick="addKitItemRowFromProduct(${JSON.stringify({id:p.id,nome:p.nome||p.descricao||'',codigo:p.codigo||'',unidade,preco,imagemURL:imgUrl}).replace(/"/g,'&quot;')}); document.getElementById('modalKitProductPicker').classList.remove('active');"
+          style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-md);border:1px solid var(--border-color);cursor:pointer;transition:background .12s,border-color .12s;"
+          onmouseover="this.style.background='var(--bling-blue-light)';this.style.borderColor='var(--bling-blue)';"
+          onmouseout="this.style.background='';this.style.borderColor='var(--border-color)';">
+          <div style="width:44px;height:44px;flex-shrink:0;">
+            ${imgUrl
+              ? `<img src="${imgUrl}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;" onerror="this.outerHTML='<div style=\'width:44px;height:44px;border-radius:6px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;\'><i class=\'fa-solid fa-box\' style=\'color:#6366F1;\'></i></div>'">`
+              : `<div style="width:44px;height:44px;border-radius:6px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-box" style="color:#6366F1;"></i></div>`
+            }
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.nome || p.descricao || '—')}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+              <span class="text-mono">${escapeHtml(p.codigo || '—')}</span>
+              ${categoria ? `· <span>${escapeHtml(categoria)}</span>` : ''}
+              · Estoque: <strong>${estoque} ${unidade}</strong>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:15px;font-weight:800;color:var(--bling-green-dark);">R$ ${preco.toFixed(2).replace('.',',')}</div>
+            <div style="font-size:10px;color:var(--text-muted);">${unidade}</div>
+          </div>
+          <div style="flex-shrink:0;">
+            <span style="background:var(--bling-green);color:#fff;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;">
+              <i class="fa-solid fa-plus"></i> Adicionar
+            </span>
+          </div>
+        </div>
+      `;
+    }).join('')}
+    </div>
+  `;
+}
+
+function removeKitItemRow(idx) {
+  const row = document.getElementById(`kitRow${idx}`);
+  if (row) { row.remove(); recalcKitTotal(); }
+}
+
+function recalcKitTotal() {
+  let total = 0;
+  const rows = document.querySelectorAll('#kitItemsBody tr');
+  rows.forEach(row => {
+    const idMatch = row.id.match(/kitRow(\d+)/);
+    if (!idMatch) return;
+    const idx = idMatch[1];
+    const qty = parseFloat(document.getElementById(`kitProdQty${idx}`)?.value) || 0;
+    const price = parseFloat(document.getElementById(`kitProdPrice${idx}`)?.value) || 0;
+    const sub = qty * price;
+    total += sub;
+    const totalEl = document.getElementById(`kitRowTotal${idx}`);
+    if (totalEl) totalEl.textContent = 'R$ ' + sub.toFixed(2).replace('.', ',');
+  });
+  const el = document.getElementById('kitTotalCalculado');
+  if (el) el.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+}
+
+// closeKitProdDropdown - stub for compatibility
+function closeKitProdDropdown(idx) {}
+async function onKitProductSearch(idx, query) {}
+function selectKitProduct(idx, id, nome, codigo, unidade, preco) {}
+
+function getKitItemsFromForm() {
+  const items = [];
+  const rows = document.querySelectorAll('#kitItemsBody tr');
+  rows.forEach(row => {
+    const idMatch = row.id?.match(/kitRow(\d+)/);
+    if (!idMatch) return;
+    const idx = idMatch[1];
+    // Suporta tanto kitProdName (novo) quanto kitProdSearch (legado)
+    const nomeEl = document.getElementById(`kitProdName${idx}`) || document.getElementById(`kitProdSearch${idx}`);
+    const nome = nomeEl?.value?.trim();
+    if (!nome) return;
+    items.push({
+      bling_product_id: document.getElementById(`kitProdId${idx}`)?.value || null,
+      product_code: document.getElementById(`kitProdCode${idx}`)?.value || '',
+      product_name: nome,
+      product_unit: document.getElementById(`kitProdUnit${idx}`)?.value || 'UN',
+      quantity: parseFloat(document.getElementById(`kitProdQty${idx}`)?.value) || 1,
+      unit_price: parseFloat(document.getElementById(`kitProdPrice${idx}`)?.value) || 0,
+    });
+  });
+  return items;
+}
+
+async function handleSaveKit() {
+  const nome = document.getElementById('kitNome').value.trim();
+  if (!nome) { showToast('O nome do kit é obrigatório.', 'warning'); return; }
+
+  const itens = getKitItemsFromForm();
+  if (!itens.length) { showToast('Adicione pelo menos um produto ao kit.', 'warning'); return; }
+
+  const payload = {
+    id: document.getElementById('kitId').value || undefined,
+    nome,
+    codigo: document.getElementById('kitCodigo').value.trim() || null,
+    descricao: document.getElementById('kitDescricao').value.trim() || null,
+    imagem_url: document.getElementById('kitImagemUrl').value.trim() || null,
+    usar_preco_fixo: document.getElementById('kitUsarPrecoFixo').checked,
+    preco_fixo: parseFloat(document.getElementById('kitPrecoFixo').value) || 0,
+    ativo: true,
+    itens
+  };
+  if (!payload.id) delete payload.id;
+
+  try {
+    const method = payload.id ? 'PUT' : 'POST';
+    const url = payload.id ? `/api/kits/${payload.id}` : '/api/kits';
+    const result = await apiRequest(url, { method, body: JSON.stringify(payload) });
+    showToast(payload.id ? 'Kit atualizado com sucesso!' : 'Kit criado com sucesso!', 'success');
+    document.getElementById('modalKitBuilder').classList.remove('active');
+    // Se estiver na página de kits, recarregar
+    if (state.currentModule === 'kits') loadModuleData('kits');
+  } catch(e) {
+    showToast('Erro ao salvar kit: ' + (e.message || ''), 'error');
+  }
+}
+
+// ==========================================================================
+// MÓDULO: FAST QUOTE BUILDER — CONSTRUTOR ÁGIL DE ORÇAMENTOS
+// ==========================================================================
+
+let quoteItems = []; // array de itens do orçamento em memória
+let quoteItemIdCounter = 0;
+let quoteClientSearchTimer = null;
+
+function openQuoteBuilder(quoteData = null) {
+  const modal = document.getElementById('modalQuoteBuilder');
+  if (!modal) return;
+
+  // Reset
+  quoteItems = [];
+  quoteItemIdCounter = 0;
+  document.getElementById('quoteId').value = '';
+  document.getElementById('quoteClienteSearch').value = '';
+  document.getElementById('quoteClienteId').value = '';
+  document.getElementById('quoteClienteNome').value = '';
+  document.getElementById('quoteTitulo').value = '';
+  document.getElementById('quoteStatus').value = 'rascunho';
+  document.getElementById('quoteDataEmissao').value = new Date().toISOString().split('T')[0];
+  document.getElementById('quoteValidadeDias').value = '15';
+  document.getElementById('quoteObservacoes').value = '';
+  document.getElementById('quoteObsInternas').value = '';
+  document.getElementById('qtDescontoPct').value = '0';
+  document.getElementById('qtFrete').value = '0';
+  document.getElementById('qtOutrasDespesas').value = '0';
+  document.getElementById('quoteBlingBadge').style.display = 'none';
+  document.getElementById('quoteBuilderTitle').textContent = quoteData ? `Orçamento ${quoteData.numero || ''}` : 'Novo Orçamento';
+
+  if (quoteData) {
+    document.getElementById('quoteId').value = quoteData.id || '';
+    document.getElementById('quoteClienteSearch').value = quoteData.bling_contact_nome || '';
+    document.getElementById('quoteClienteId').value = quoteData.bling_contact_id || '';
+    document.getElementById('quoteClienteNome').value = quoteData.bling_contact_nome || '';
+    document.getElementById('quoteTitulo').value = quoteData.titulo || '';
+    document.getElementById('quoteStatus').value = quoteData.status || 'rascunho';
+    document.getElementById('quoteDataEmissao').value = quoteData.data_emissao || new Date().toISOString().split('T')[0];
+    document.getElementById('quoteValidadeDias').value = quoteData.validade_dias || '15';
+    document.getElementById('quoteObservacoes').value = quoteData.observacoes || '';
+    document.getElementById('quoteObsInternas').value = quoteData.obs_internas || '';
+    document.getElementById('qtDescontoPct').value = quoteData.desconto_pct || '0';
+    document.getElementById('qtFrete').value = quoteData.frete || '0';
+    document.getElementById('qtOutrasDespesas').value = quoteData.outras_despesas || '0';
+    if (quoteData.bling_pedido_id || quoteData.bling_proposta_id) {
+      document.getElementById('quoteBlingBadge').style.display = 'block';
+    }
+    quoteItems = JSON.parse(JSON.stringify(quoteData.itens || []));
+    quoteItems.forEach(it => { it._uid = ++quoteItemIdCounter; });
+  }
+
+  renderQuoteItems();
+  recalcQuoteTotals();
+  updateQuoteStatusBadge();
+  modal.classList.add('active');
+}
+
+function updateQuoteStatusBadge() {
+  const status = document.getElementById('quoteStatus')?.value || 'rascunho';
+  const wrapper = document.getElementById('quoteStatusBadgeWrapper');
+  if (!wrapper) return;
+  const labels = { rascunho: 'Rascunho', apresentado: 'Apresentado', aprovado: 'Aprovado ✓', cancelado: 'Cancelado' };
+  wrapper.innerHTML = `<span class="quote-status-badge qstatus-${status}">${labels[status] || status}</span>`;
+  // Habilitar/desabilitar botão de exportar
+  const btn = document.getElementById('btnExportarBling');
+  if (btn) {
+    btn.disabled = status !== 'aprovado';
+    btn.style.opacity = status === 'aprovado' ? '1' : '0.5';
+    btn.title = status === 'aprovado' ? 'Exportar para o Bling' : 'Mude o status para "Aprovado" para exportar';
+  }
+}
+
+function renderQuoteItems() {
+  const tbody = document.getElementById('quoteItemsBody');
+  if (!tbody) return;
+
+  if (!quoteItems.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">
+      <i class="fa-solid fa-layer-group"></i> Adicione Kits ou Produtos usando os botões acima</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = quoteItems.map((item, idx) => {
+    const uid = item._uid;
+    if (item.tipo === 'kit') {
+      const kitTotal = calcItemTotal(item);
+      return `
+        <tr class="quote-item-row quote-kit-header">
+          <td style="padding:6px 8px;"><i class="fa-solid fa-layer-group" style="color:#F59E0B;"></i></td>
+          <td style="padding:6px 8px;font-weight:700;" colspan="3">🧰 ${escapeHtml(item.nome || item.descricao || 'Kit')}</td>
+          <td style="text-align:right;padding:6px;"><input type="number" class="qi-input" value="${item.quantidade || 1}" min="1" step="1"
+              onchange="updateQuoteItemField(${uid}, 'quantidade', parseFloat(this.value)||1)" style="width:60px;text-align:right;"></td>
+          <td style="padding:6px 8px;text-align:right;font-size:12px;color:var(--text-muted);">Preço do kit</td>
+          <td></td>
+          <td style="padding:6px 8px;text-align:right;font-weight:800;color:var(--bling-green-dark);">R$ ${kitTotal.toFixed(2).replace('.',',')}</td>
+          <td style="padding:4px;">
+            <button onclick="removeQuoteItem(${uid})" style="background:none;border:none;cursor:pointer;color:#EF4444;padding:2px 5px;"><i class="fa-solid fa-times"></i></button>
+          </td>
+        </tr>
+        ${(item.itens_kit || []).map(ki => `
+          <tr class="quote-item-row quote-kit-sub">
+            <td style="padding:4px 8px;"><span style="font-size:10px;color:var(--text-muted);padding-left:12px;">└</span></td>
+            <td style="padding:4px 8px;font-size:12px;color:var(--text-secondary);">${escapeHtml(ki.product_name || '')}</td>
+            <td style="padding:4px 8px;font-size:11px;color:var(--text-muted);">${escapeHtml(ki.product_code || '')}</td>
+            <td style="padding:4px 8px;font-size:11px;">${escapeHtml(ki.product_unit || 'UN')}</td>
+            <td style="padding:4px 8px;text-align:right;font-size:12px;">${parseFloat(ki.quantity||1)} × ${parseFloat(item.quantidade||1)}</td>
+            <td style="padding:4px 8px;text-align:right;font-size:12px;">R$ ${parseFloat(ki.unit_price||0).toFixed(2).replace('.',',')}</td>
+            <td></td>
+            <td style="padding:4px 8px;text-align:right;font-size:12px;">R$ ${(ki.quantity * item.quantidade * ki.unit_price).toFixed(2).replace('.',',')}</td>
+            <td></td>
+          </tr>
+        `).join('')}
+      `;
+    } else {
+      const total = calcItemTotal(item);
+      return `
+        <tr class="quote-item-row">
+          <td style="padding:6px 4px;text-align:center;color:var(--text-muted);font-size:11px;">${idx + 1}</td>
+          <td style="padding:4px 6px;"><input type="text" class="qi-input" value="${escapeHtml(item.descricao||item.nome||'')}"
+              onchange="updateQuoteItemField(${uid}, 'descricao', this.value)"></td>
+          <td style="padding:4px 6px;"><input type="text" class="qi-input" value="${escapeHtml(item.codigo||'')}"
+              onchange="updateQuoteItemField(${uid}, 'codigo', this.value)" style="width:80px;"></td>
+          <td style="padding:4px 6px;"><input type="text" class="qi-input" value="${escapeHtml(item.unidade||'UN')}"
+              onchange="updateQuoteItemField(${uid}, 'unidade', this.value)" style="width:40px;"></td>
+          <td style="padding:4px 6px;"><input type="number" class="qi-input" value="${item.quantidade||1}" min="0.001" step="0.001"
+              onchange="updateQuoteItemField(${uid}, 'quantidade', parseFloat(this.value)||1)" style="width:70px;text-align:right;"></td>
+          <td style="padding:4px 6px;"><input type="number" class="qi-input" value="${item.preco_unitario||0}" min="0" step="0.01"
+              onchange="updateQuoteItemField(${uid}, 'preco_unitario', parseFloat(this.value)||0)" style="width:100px;text-align:right;"></td>
+          <td style="padding:4px 6px;"><input type="number" class="qi-input" value="${item.desconto_item_pct||0}" min="0" max="100" step="0.1"
+              onchange="updateQuoteItemField(${uid}, 'desconto_item_pct', parseFloat(this.value)||0)" style="width:55px;text-align:right;"></td>
+          <td style="padding:4px 8px;text-align:right;font-weight:700;">R$ ${total.toFixed(2).replace('.',',')}</td>
+          <td style="padding:4px;">
+            <button onclick="removeQuoteItem(${uid})" style="background:none;border:none;cursor:pointer;color:#EF4444;padding:2px 5px;"><i class="fa-solid fa-times"></i></button>
+          </td>
+        </tr>
+      `;
+    }
+  }).join('');
+}
+
+function calcItemTotal(item) {
+  if (item.tipo === 'kit') {
+    const qtd = parseFloat(item.quantidade) || 1;
+    if (item.usar_preco_fixo && item.preco_fixo) return parseFloat(item.preco_fixo) * qtd;
+    return (item.itens_kit || []).reduce((s, ki) => s + (ki.quantity * ki.unit_price * qtd), 0);
+  }
+  const qty = parseFloat(item.quantidade) || 1;
+  const price = parseFloat(item.preco_unitario) || 0;
+  const disc = parseFloat(item.desconto_item_pct) || 0;
+  return qty * price * (1 - disc / 100);
+}
+
+function updateQuoteItemField(uid, field, value) {
+  const item = quoteItems.find(i => i._uid === uid);
+  if (!item) return;
+  item[field] = value;
+  recalcQuoteTotals();
+  renderQuoteItems();
+}
+
+function removeQuoteItem(uid) {
+  quoteItems = quoteItems.filter(i => i._uid !== uid);
+  renderQuoteItems();
+  recalcQuoteTotals();
+}
+
+function recalcQuoteTotals() {
+  const subtotal = quoteItems.reduce((s, item) => s + calcItemTotal(item), 0);
+  const discPct = parseFloat(document.getElementById('qtDescontoPct')?.value) || 0;
+  const frete = parseFloat(document.getElementById('qtFrete')?.value) || 0;
+  const outras = parseFloat(document.getElementById('qtOutrasDespesas')?.value) || 0;
+  const discVal = subtotal * (discPct / 100);
+  const total = subtotal - discVal + frete + outras;
+
+  const fmt = v => 'R$ ' + v.toFixed(2).replace('.', ',');
+  const el1 = document.getElementById('qtSubtotal');
+  const el2 = document.getElementById('qtTotalFinal');
+  if (el1) el1.textContent = fmt(subtotal);
+  if (el2) el2.textContent = fmt(total);
+}
+
+// ---- Autocomplete de Cliente no Orçamento ----
+function onQuoteClientSearch(query) {
+  if (quoteClientSearchTimer) clearTimeout(quoteClientSearchTimer);
+  const drop = document.getElementById('quoteClienteDropdown');
+  if (!drop) return;
+
+  document.getElementById('quoteClienteId').value = '';
+  document.getElementById('quoteClienteNome').value = '';
+
+  if (!query || query.length < 2) { drop.style.display = 'none'; drop.innerHTML = ''; return; }
+
+  drop.innerHTML = '<div class="autocomplete-item"><i class="fa-solid fa-spinner fa-spin"></i> Buscando...</div>';
+  drop.style.display = 'block';
+
+  quoteClientSearchTimer = setTimeout(async () => {
+    try {
+      const res = await apiRequest(`/api/contatos?pesquisa=${encodeURIComponent(query)}&limite=12`);
+      const clients = res?.data || [];
+      if (!clients.length) {
+        drop.innerHTML = '<div class="autocomplete-item" style="color:var(--text-muted);">Nenhum cliente encontrado.</div>';
+        return;
+      }
+      drop.innerHTML = clients.map(c => {
+        const nome = c.nome || c.fantasia || 'Sem nome';
+        const doc = c.cpfCnpj || '';
+        return `<div class="autocomplete-item" onclick="selectQuoteClient(${c.id}, '${nome.replace(/'/g,"\\'")}')">
+          <strong>${nome}</strong> ${doc ? `<small style="color:var(--text-muted);">· ${doc}</small>` : ''}
+        </div>`;
+      }).join('');
+    } catch(e) {
+      drop.innerHTML = '<div class="autocomplete-item" style="color:#EF4444;">Erro ao buscar clientes.</div>';
+    }
+  }, 380);
+}
+
+function selectQuoteClient(id, nome) {
+  document.getElementById('quoteClienteSearch').value = nome;
+  document.getElementById('quoteClienteId').value = id;
+  document.getElementById('quoteClienteNome').value = nome;
+  const drop = document.getElementById('quoteClienteDropdown');
+  if (drop) { drop.style.display = 'none'; drop.innerHTML = ''; }
+}
+
+// ---- Kit Picker (abrir modal de seleção de kit) ----
+async function openKitPickerModal() {
+  const modal = document.getElementById('modalKitPicker');
+  if (!modal) return;
+  modal.classList.add('active');
+
+  const grid = document.getElementById('kitPickerGrid');
+  grid.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:24px;grid-column:1/-1;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando kits...</div>';
+
+  try {
+    const res = await apiRequest('/api/kits?apenasAtivos=true');
+    const kits = res?.data || [];
+    if (!kits.length) {
+      grid.innerHTML = '<div style="text-align:center;padding:24px;grid-column:1/-1;color:var(--text-muted);"><i class="fa-solid fa-box-open" style="font-size:32px;"></i><p style="margin-top:8px;">Nenhum kit cadastrado ainda.<br><a href="kits.html" style="color:var(--bling-green);">Clique aqui para criar kits</a></p></div>';
+      return;
+    }
+    grid.innerHTML = kits.map(kit => {
+      const totalKit = (kit.itens || []).reduce((s, it) => s + (it.quantity * it.unit_price), 0);
+      const preco = kit.usar_preco_fixo ? parseFloat(kit.preco_fixo || 0) : totalKit;
+      const img = kit.imagem_url
+        ? `<img src="${kit.imagem_url}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;margin-bottom:8px;" onerror="this.style.display='none'">`
+        : `<i class="fa-solid fa-layer-group" style="font-size:32px;color:#F59E0B;margin-bottom:8px;"></i>`;
+      return `
+        <div class="kit-picker-card" onclick="addKitToQuote(${JSON.stringify(kit).replace(/'/g,"&apos;")})">
+          ${img}
+          <div class="kpc-name">${escapeHtml(kit.nome)}</div>
+          <div class="kpc-count">${(kit.itens||[]).length} produto(s)</div>
+          <div class="kpc-price">R$ ${preco.toFixed(2).replace('.',',')}</div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = `<div style="color:#EF4444;padding:16px;grid-column:1/-1;">Erro ao carregar kits: ${e.message}</div>`;
+  }
+}
+
+function addKitToQuote(kit) {
+  const uid = ++quoteItemIdCounter;
+  const totalKit = (kit.itens || []).reduce((s, it) => s + (it.quantity * it.unit_price), 0);
+  quoteItems.push({
+    _uid: uid,
+    tipo: 'kit',
+    kit_id: kit.id,
+    nome: kit.nome,
+    descricao: kit.descricao || kit.nome,
+    quantidade: 1,
+    usar_preco_fixo: kit.usar_preco_fixo,
+    preco_fixo: kit.preco_fixo,
+    preco_total: kit.usar_preco_fixo ? kit.preco_fixo : totalKit,
+    itens_kit: kit.itens || []
+  });
+  document.getElementById('modalKitPicker')?.classList.remove('active');
+  renderQuoteItems();
+  recalcQuoteTotals();
+  showToast(`Kit "${kit.nome}" adicionado!`, 'success');
+}
+
+// ---- Product Picker para orçamento (produto avulso) ----
+function openProductPickerForQuote() {
+  const nome = prompt('Nome ou código do produto (busca no Bling):');
+  if (!nome || nome.trim().length < 2) return;
+
+  apiRequest(`/api/produtos?pesquisa=${encodeURIComponent(nome.trim())}&limite=10`)
+    .then(res => {
+      const prods = res?.data || [];
+      if (!prods.length) { showToast('Nenhum produto encontrado.', 'warning'); return; }
+      if (prods.length === 1) {
+        addProductToQuote(prods[0]);
+        return;
+      }
+      // Múltiplos resultados: mostrar lista simples
+      const opts = prods.map((p, i) => `${i+1}. ${p.nome} (${p.codigo || 'sem código'}) - R$ ${parseFloat(p.preco||0).toFixed(2)}`).join('\n');
+      const choice = prompt(`Selecione o produto (1-${prods.length}):\n\n${opts}`);
+      const idx = parseInt(choice) - 1;
+      if (!isNaN(idx) && prods[idx]) addProductToQuote(prods[idx]);
+    })
+    .catch(e => showToast('Erro ao buscar produto: ' + e.message, 'error'));
+}
+
+function addProductToQuote(prod) {
+  const uid = ++quoteItemIdCounter;
+  quoteItems.push({
+    _uid: uid,
+    tipo: 'produto',
+    bling_product_id: prod.id,
+    descricao: prod.nome || '',
+    nome: prod.nome || '',
+    codigo: prod.codigo || '',
+    unidade: prod.unidade || 'UN',
+    quantidade: 1,
+    preco_unitario: parseFloat(prod.preco) || 0,
+    desconto_item_pct: 0
+  });
+  renderQuoteItems();
+  recalcQuoteTotals();
+  showToast(`Produto "${prod.nome}" adicionado!`, 'success');
+}
+
+// ---- Salvar Orçamento ----
+async function handleSaveQuote() {
+  const clienteId = document.getElementById('quoteClienteId')?.value;
+  const clienteNome = document.getElementById('quoteClienteNome')?.value || document.getElementById('quoteClienteSearch')?.value;
+
+  if (!clienteNome) { showToast('Informe o cliente do orçamento.', 'warning'); return; }
+  if (!quoteItems.length) { showToast('Adicione pelo menos um item ao orçamento.', 'warning'); return; }
+
+  const subtotal = quoteItems.reduce((s, item) => s + calcItemTotal(item), 0);
+  const discPct = parseFloat(document.getElementById('qtDescontoPct')?.value) || 0;
+  const frete = parseFloat(document.getElementById('qtFrete')?.value) || 0;
+  const outras = parseFloat(document.getElementById('qtOutrasDespesas')?.value) || 0;
+  const discVal = subtotal * (discPct / 100);
+  const totalFinal = subtotal - discVal + frete + outras;
+
+  const validadeDias = parseInt(document.getElementById('quoteValidadeDias')?.value) || 15;
+  const dataEmissao = document.getElementById('quoteDataEmissao')?.value || new Date().toISOString().split('T')[0];
+  const dataValidade = new Date(dataEmissao);
+  dataValidade.setDate(dataValidade.getDate() + validadeDias);
+
+  const payload = {
+    id: document.getElementById('quoteId')?.value || undefined,
+    titulo: document.getElementById('quoteTitulo')?.value || '',
+    status: document.getElementById('quoteStatus')?.value || 'rascunho',
+    bling_contact_id: clienteId ? parseInt(clienteId) : null,
+    bling_contact_nome: clienteNome,
+    itens: quoteItems.map(({ _uid, ...rest }) => rest),
+    total_itens: subtotal,
+    desconto_pct: discPct,
+    desconto_valor: discVal,
+    frete,
+    outras_despesas: outras,
+    total_final: totalFinal,
+    validade_dias: validadeDias,
+    data_emissao: dataEmissao,
+    data_validade: dataValidade.toISOString().split('T')[0],
+    observacoes: document.getElementById('quoteObservacoes')?.value || '',
+    obs_internas: document.getElementById('quoteObsInternas')?.value || ''
+  };
+  if (!payload.id) delete payload.id;
+
+  try {
+    const method = payload.id ? 'PUT' : 'POST';
+    const url = payload.id ? `/api/orcamentos/${payload.id}` : '/api/orcamentos';
+    const result = await apiRequest(url, { method, body: JSON.stringify(payload) });
+    const savedQuote = result?.data;
+    if (savedQuote?.id) document.getElementById('quoteId').value = savedQuote.id;
+    document.getElementById('quoteBuilderTitle').textContent = `Orçamento ${savedQuote?.numero || ''}`;
+    showToast('Orçamento salvo com sucesso!', 'success');
+    if (state.currentModule === 'quotes') loadModuleData('quotes');
+  } catch(e) {
+    showToast('Erro ao salvar orçamento: ' + (e.message || ''), 'error');
+  }
+}
+
+// ---- Exportar para o Bling ----
+function openExportBlingModal() {
+  const quoteId = document.getElementById('quoteId')?.value;
+  if (!quoteId) { showToast('Salve o orçamento antes de exportar.', 'warning'); return; }
+  const status = document.getElementById('quoteStatus')?.value;
+  if (status !== 'aprovado') { showToast('Mude o status para "Aprovado" para exportar.', 'warning'); return; }
+  document.getElementById('exportBlingLoading').style.display = 'none';
+  document.getElementById('modalExportBling').classList.add('active');
+}
+
+async function confirmarExportBling(destino) {
+  const quoteId = document.getElementById('quoteId')?.value;
+  if (!quoteId) return;
+
+  const loading = document.getElementById('exportBlingLoading');
+  const btns = document.querySelectorAll('#modalExportBling .btn:not(#exportBlingLoading .btn)');
+
+  if (loading) loading.style.display = 'block';
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    // Salvar primeiro para garantir dados atualizados
+    await handleSaveQuote();
+
+    const res = await apiRequest(`/api/orcamentos/${quoteId}/exportar-bling`, {
+      method: 'POST',
+      body: JSON.stringify({ destino })
+    });
+
+    document.getElementById('modalExportBling').classList.remove('active');
+    document.getElementById('quoteBlingBadge').style.display = 'block';
+    showToast(res?.message || 'Exportado com sucesso para o Bling!', 'success');
+
+    // Log com ID do Bling
+    if (res?.bling_id) {
+      console.log(`✅ Bling ${destino} criado com ID: ${res.bling_id}`);
+    }
+  } catch(e) {
+    const msg = e.message || 'Erro ao exportar para o Bling.';
+    showToast(msg, 'error');
+  } finally {
+    if (loading) loading.style.display = 'none';
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+// ---- Preview / Impressão ----
+function openQuotePrintPreview() {
+  const modal = document.getElementById('modalQuotePrint');
+  const area = document.getElementById('quotePrintArea');
+  if (!modal || !area) return;
+
+  const clienteNome = document.getElementById('quoteClienteNome')?.value || document.getElementById('quoteClienteSearch')?.value || '—';
+  const titulo = document.getElementById('quoteTitulo')?.value || 'Orçamento';
+  const dataEmissao = document.getElementById('quoteDataEmissao')?.value || '';
+  const validadeDias = document.getElementById('quoteValidadeDias')?.value || 15;
+  const obs = document.getElementById('quoteObservacoes')?.value || '';
+  const subtotal = quoteItems.reduce((s, item) => s + calcItemTotal(item), 0);
+  const discPct = parseFloat(document.getElementById('qtDescontoPct')?.value) || 0;
+  const frete = parseFloat(document.getElementById('qtFrete')?.value) || 0;
+  const outras = parseFloat(document.getElementById('qtOutrasDespesas')?.value) || 0;
+  const discVal = subtotal * (discPct / 100);
+  const totalFinal = subtotal - discVal + frete + outras;
+  const fmt = v => 'R$ ' + v.toFixed(2).replace('.', ',');
+
+  area.innerHTML = `
+    <div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;color:#1a1a1a;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #00A868;padding-bottom:16px;margin-bottom:20px;">
+        <div>
+          <h1 style="font-size:22px;font-weight:900;color:#00A868;margin:0;">ORÇAMENTO</h1>
+          <p style="margin:4px 0 0;font-size:12px;color:#666;">FLR Instalações · flr.lynxems.com.br</p>
+        </div>
+        <div style="text-align:right;font-size:12px;color:#555;">
+          <div><strong>Data:</strong> ${dataEmissao || '—'}</div>
+          <div><strong>Validade:</strong> ${validadeDias} dias</div>
+        </div>
+      </div>
+
+      <div style="background:#F8FAF9;border-radius:6px;padding:12px 16px;margin-bottom:16px;">
+        <strong>Cliente:</strong> ${escapeHtml(clienteNome)}<br>
+        ${titulo ? `<strong>Ref.:</strong> ${escapeHtml(titulo)}` : ''}
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;">
+        <thead>
+          <tr style="background:#00A868;color:#fff;">
+            <th style="padding:8px;text-align:left;">Descrição</th>
+            <th style="padding:8px;text-align:center;width:50px;">Qtd</th>
+            <th style="padding:8px;text-align:right;width:120px;">Preço Unit.</th>
+            <th style="padding:8px;text-align:right;width:120px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${quoteItems.map((item, i) => {
+            const total = calcItemTotal(item);
+            if (item.tipo === 'kit') {
+              return `
+                <tr style="background:#FFFBEB;font-weight:700;">
+                  <td style="padding:7px 8px;" colspan="2">🧰 ${escapeHtml(item.nome || item.descricao || 'Kit')} (kit)</td>
+                  <td></td>
+                  <td style="padding:7px 8px;text-align:right;font-weight:800;">${fmt(total)}</td>
+                </tr>
+                ${(item.itens_kit||[]).map(ki => `
+                  <tr style="background:#FFFBF5;">
+                    <td style="padding:4px 8px;font-size:12px;padding-left:24px;">└ ${escapeHtml(ki.product_name||'')}</td>
+                    <td style="padding:4px 8px;text-align:center;font-size:12px;">${ki.quantity * (item.quantidade||1)} ${ki.product_unit||'UN'}</td>
+                    <td style="padding:4px 8px;text-align:right;font-size:12px;">${fmt(ki.unit_price||0)}</td>
+                    <td style="padding:4px 8px;text-align:right;font-size:12px;">${fmt(ki.quantity*(item.quantidade||1)*(ki.unit_price||0))}</td>
+                  </tr>
+                `).join('')}
+              `;
+            }
+            return `
+              <tr style="${i%2===0?'background:#fff':'background:#F9FAFB'}">
+                <td style="padding:7px 8px;">${escapeHtml(item.descricao||item.nome||'')}</td>
+                <td style="padding:7px 8px;text-align:center;">${item.quantidade||1} ${item.unidade||'UN'}</td>
+                <td style="padding:7px 8px;text-align:right;">${fmt(item.preco_unitario||0)}</td>
+                <td style="padding:7px 8px;text-align:right;font-weight:700;">${fmt(total)}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+        <table style="font-size:13px;width:280px;">
+          <tr><td style="padding:3px 8px;color:#555;">Subtotal</td><td style="text-align:right;padding:3px 8px;">${fmt(subtotal)}</td></tr>
+          ${discPct > 0 ? `<tr><td style="padding:3px 8px;color:#555;">Desconto (${discPct}%)</td><td style="text-align:right;padding:3px 8px;color:#EF4444;">- ${fmt(discVal)}</td></tr>` : ''}
+          ${frete > 0 ? `<tr><td style="padding:3px 8px;color:#555;">Frete</td><td style="text-align:right;padding:3px 8px;">${fmt(frete)}</td></tr>` : ''}
+          ${outras > 0 ? `<tr><td style="padding:3px 8px;color:#555;">Outras despesas</td><td style="text-align:right;padding:3px 8px;">${fmt(outras)}</td></tr>` : ''}
+          <tr style="border-top:2px solid #00A868;">
+            <td style="padding:8px 8px;font-weight:900;font-size:15px;">TOTAL</td>
+            <td style="text-align:right;padding:8px 8px;font-weight:900;font-size:15px;color:#00A868;">${fmt(totalFinal)}</td>
+          </tr>
+        </table>
+      </div>
+
+      ${obs ? `<div style="border-top:1px solid #ddd;padding-top:12px;font-size:12px;color:#555;"><strong>Observações:</strong><p style="margin:6px 0 0;">${escapeHtml(obs)}</p></div>` : ''}
+      <div style="text-align:center;margin-top:20px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:10px;">
+        Orçamento gerado pelo FLR Bling ERP · Válido por ${validadeDias} dias a partir de ${dataEmissao}
+      </div>
+    </div>
+  `;
+
+  modal.classList.add('active');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Expor funções globais para kits e orçamentos
+window.openKitBuilder = openKitBuilder;
+window.handleSaveKit = handleSaveKit;
+window.openKitProductPickerModal = openKitProductPickerModal;
+window.onKitProdPickerSearch = onKitProdPickerSearch;
+window.addKitManualRow = addKitManualRow;
+window.addKitItemRow = addKitItemRow;
+window.removeKitItemRow = removeKitItemRow;
+window.recalcKitTotal = recalcKitTotal;
+window.toggleKitPrecoFixo = toggleKitPrecoFixo;
+
+window.openQuoteBuilder = openQuoteBuilder;
+window.handleSaveQuote = handleSaveQuote;
+window.openKitPickerModal = openKitPickerModal;
+window.openProductPickerForQuote = openProductPickerForQuote;
+window.openExportBlingModal = openExportBlingModal;
+window.confirmarExportBling = confirmarExportBling;
+window.openQuotePrintPreview = openQuotePrintPreview;
+window.onQuoteClientSearch = onQuoteClientSearch;
+window.selectQuoteClient = selectQuoteClient;
+window.addKitToQuote = addKitToQuote;
+window.addProductToQuote = addProductToQuote;
+window.removeQuoteItem = removeQuoteItem;
+window.updateQuoteItemField = updateQuoteItemField;
+window.recalcQuoteTotals = recalcQuoteTotals;
+window.updateQuoteStatusBadge = updateQuoteStatusBadge;
 

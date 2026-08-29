@@ -57,13 +57,11 @@ if (fs.existsSync(tokensSrc)) {
   console.log('✓ Copiado: tokens.json');
 }
 
-// 4. Cria o arquivo public_html.zip para upload direto
-console.log('\n3️⃣ Gerando pacote ZIP para upload na Hostinger (public_html.zip)...');
+// 4. Cria o arquivo public_html.zip com barras normatizadas para Linux/Hostinger
+console.log('\n3️⃣ Gerando pacote ZIP normatizado para a Hostinger (public_html.zip)...');
 try {
-  if (fs.existsSync(zipFile)) {
-    fs.unlinkSync(zipFile);
-  }
-  execSync(`powershell -Command "Compress-Archive -Path '${publicHtmlDir}\\*' -DestinationPath '${zipFile}' -Force"`, { stdio: 'ignore' });
+  const psScript = path.join(rootDir, 'create_zip.ps1');
+  execSync(`powershell -ExecutionPolicy Bypass -File "${psScript}" -SourceDir "${publicHtmlDir}" -ZipPath "${zipFile}"`, { stdio: 'inherit' });
   console.log(`✓ Arquivo ZIP gerado com sucesso: ${zipFile}`);
 } catch (zipErr) {
   console.warn('⚠️ Aviso ao gerar ZIP:', zipErr.message);
