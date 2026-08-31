@@ -28,8 +28,24 @@ const TABLES = {
   LOGS: 'flrBling_activity_logs',
   KITS: 'flrBling_kits',
   KIT_ITEMS: 'flrBling_kit_items',
-  QUOTES: 'flrBling_quotes'
+  QUOTES: 'flrBling_quotes',
+  PRODUCTS: 'flrBling_products',
+  PROJECTS: 'flrBling_projects',
+  NFE_ENTRIES: 'flrBling_nfe_entries',
+  NFE_ITEMS: 'flrBling_nfe_items',
+  DE_PARA_RULES: 'flrBling_de_para_rules',
+  STOCK_MOVEMENTS: 'flrBling_stock_movements'
 };
+
+// Armazenamento em memória defensivo (caso o Supabase ainda esteja em migração)
+const memoryKits = [];
+const memoryQuotes = [];
+const memoryProducts = [];
+const memoryProjects = [];
+const memoryNfeEntries = [];
+const memoryNfeItems = [];
+const memoryDeParaRules = [];
+const memoryStockMovements = [];
 
 // Permissões Padrão para os Perfis do Sistema
 const DEFAULT_PERMISSIONS = {
@@ -999,6 +1015,838 @@ async function logActivity(actionType, blingCustomerId = null, description = '',
   } catch (e) {}
 }
 
+// ==========================================================================
+// FUNÇÕES: GESTÃO DE KITS DE PRODUTOS
+// ==========================================================================
+
+async function getAllKits({ apenasAtivos = false } = {}) {
+  if (supabase) {
+    try {
+      let query = supabase
+        .from(TABLES.KITS)
+        .select(`*, itens:${TABLES.KIT_ITEMS}(*)`)
+        .order('created_at', { ascending: false });
+      if (apenasAtivos) query = query.eq('ativo', true);
+      const { data, error } = await query;
+      if (!error && data) return data;
+    } catch (err) {
+      console.warn('Fallback memória ao buscar kits:', err.message);
+    }
+  }
+  let list = memoryKits;
+  if (apenasAtivos) list = list.filter(k => k.ativo !== false);
+  return list;
+}
+
+async function getKitById(id) {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.KITS)
+        .select(`*, itens:${TABLES.KIT_ITEMS}(*)`)
+        .eq('id', id)
+        .single();
+      if (!error && data) return data;
+    } catch (err) {
+      console.warn('Fallback memória ao buscar kit:', err.message);
+    }
+  }
+  return memoryKits.find(k => k.id === id) || null;
+}
+
+async function saveKit(kitData, userId = null) {
+  const { id, itens = [], ...fields } = kitData;
+  const now = new Date().toISOString();
+  const kitPayload = { ...fields, updated_at: now };
+  if (!id) {
+    kitPayload.created_by = userId;
+    kitPayload.created_at = now;
+  }
+
+  if (supabase) {
+    try {
+      let kitId = id;
+      if (id) {
+        const { data, error } = await supabase
+          .from(TABLES.KITS)
+          .update(kitPayload)
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) throw error;
+        kitId = data.id;
+      } else {
+        const { data, error } = await supabase
+          .from(TABLES.KITS)
+          .insert(kitPayload)
+          .select()
+          .single();
+        if (error) throw error;
+        kitId = data.id;
+      }
+
+      await supabase.from(TABLES.KIT_ITEMS).delete().eq('kit_id', kitId);
+      if (itens.length > 0) {
+        const itemsToInsert = itens.map((it, idx) => ({
+          kit_id: kitId,
+          bling_product_id: it.bling_product_id || null,
+          product_code: it.product_code || '',
+          product_name: it.product_name || '',
+          product_unit: it.product_unit || 'UN',
+          quantity: parseFloat(it.quantity) || 1,
+          unit_price: parseFloat(it.unit_price) || 0,
+          imagem_url: it.imagem_url || null,
+          sort_order: idx
+        }));
+        await supabase.from(TABLES.KIT_ITEMS).insert(itemsToInsert);
+      }
+      return getKitById(kitId);
+    } catch (err) {
+      console.warn('Fallback memória ao salvar kit:', err.message);
+    }
+  }
+
+  // Fallback em memória
+  const generatedId = id || `kit-${Date.now()}`;
+  const savedKit = {
+    id: generatedId,
+    ...kitPayload,
+    itens: itens.map((it, idx) => ({
+      id: `ki-${Date.now()}-${idx}`,
+      kit_id: generatedId,
+      ...it
+    }))
+  };
+  const idx = memoryKits.findIndex(k => k.id === generatedId);
+  if (idx >= 0) memoryKits[idx] = savedKit;
+  else memoryKits.unshift(savedKit);
+  return savedKit;
+}
+
+async function deleteKit(id) {
+  if (supabase) {
+    try {
+      await supabase
+        .from(TABLES.KITS)
+        .update({ ativo: false, updated_at: new Date().toISOString() })
+        .eq('id', id);
+    } catch (e) {}
+  }
+  const k = memoryKits.find(k => k.id === id);
+  if (k) k.ativo = false;
+  return true;
+}
+
+// ==========================================================================
+// FUNÇÕES: GESTÃO DE ORÇAMENTOS
+// ==========================================================================
+
+async function generateQuoteNumber() {
+  const year = new Date().getFullYear();
+  const prefix = `ORC-${year}-`;
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from(TABLES.QUOTES)
+        .select('numero')
+        .ilike('numero', `${prefix}%`)
+        .order('numero', { ascending: false })
+        .limit(1);
+      let seq = 1;
+      if (data && data.length > 0) {
+        const lastNum = parseInt(data[0].numero.replace(prefix, ''), 10);
+        if (!isNaN(lastNum)) seq = lastNum + 1;
+      }
+      return `${prefix}${String(seq).padStart(3, '0')}`;
+    } catch {}
+  }
+  return `${prefix}${String(memoryQuotes.length + 1).padStart(3, '0')}`;
+}
+
+async function getAllQuotes({ status, contactId, limit = 100, offset = 0 } = {}) {
+  if (supabase) {
+    try {
+      let query = supabase
+        .from(TABLES.QUOTES)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      if (status) query = query.eq('status', status);
+      if (contactId) query = query.eq('bling_contact_id', contactId);
+      const { data, error } = await query;
+      if (!error && data) return data;
+    } catch (err) {
+      console.warn('Fallback memória ao buscar orçamentos:', err.message);
+    }
+  }
+  let list = memoryQuotes;
+  if (status) list = list.filter(q => q.status === status);
+  if (contactId) list = list.filter(q => q.bling_contact_id === contactId);
+  return list.slice(offset, offset + limit);
+}
+
+async function getQuoteById(id) {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.QUOTES)
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (!error && data) return data;
+    } catch (err) {
+      console.warn('Fallback memória ao buscar orçamento:', err.message);
+    }
+  }
+  return memoryQuotes.find(q => q.id === id) || null;
+}
+
+async function saveQuote(quoteData, userId = null) {
+  const now = new Date().toISOString();
+  const payload = { ...quoteData, updated_at: now };
+  if (!payload.id) {
+    payload.created_by = userId;
+    payload.created_at = now;
+    if (!payload.numero) payload.numero = await generateQuoteNumber();
+  }
+
+  if (supabase) {
+    try {
+      if (!payload.id) {
+        const { data, error } = await supabase
+          .from(TABLES.QUOTES)
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      } else {
+        const { id, ...updateFields } = payload;
+        const { data, error } = await supabase
+          .from(TABLES.QUOTES)
+          .update(updateFields)
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
+    } catch (err) {
+      console.warn('Fallback memória ao salvar orçamento:', err.message);
+    }
+  }
+
+  const generatedId = payload.id || `quote-${Date.now()}`;
+  const saved = { ...payload, id: generatedId };
+  const idx = memoryQuotes.findIndex(q => q.id === generatedId);
+  if (idx >= 0) memoryQuotes[idx] = saved;
+  else memoryQuotes.unshift(saved);
+  return saved;
+}
+
+async function updateQuote(id, fields) {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.QUOTES)
+        .update({ ...fields, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  const q = memoryQuotes.find(q => q.id === id);
+  if (q) Object.assign(q, fields, { updated_at: new Date().toISOString() });
+  return q;
+}
+
+async function updateQuoteBlingSync(id, { blingPedidoId, blingPropostaId, tipo }) {
+  const update = {
+    bling_exportado_em: new Date().toISOString(),
+    bling_export_tipo: tipo,
+    updated_at: new Date().toISOString()
+  };
+  if (blingPedidoId) update.bling_pedido_id = blingPedidoId;
+  if (blingPropostaId) update.bling_proposta_id = blingPropostaId;
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.QUOTES)
+        .update(update)
+        .eq('id', id)
+        .select()
+        .single();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  const q = memoryQuotes.find(q => q.id === id);
+  if (q) Object.assign(q, update);
+  return q;
+}
+
+// ==========================================================================
+// FUNÇÕES: CATÁLOGO LOCAL DE PRODUTOS & MATERIAIS
+// ==========================================================================
+
+async function getAllProducts({ search, onlyLocal = false, onlyBling = false, limit = 100, offset = 0 } = {}) {
+  if (supabase) {
+    try {
+      let query = supabase
+        .from(TABLES.PRODUCTS)
+        .select('*')
+        .eq('ativo', true)
+        .order('nome', { ascending: true })
+        .range(offset, offset + limit - 1);
+      if (search) {
+        query = query.or(`nome.ilike.%${search}%,codigo.ilike.%${search}%,ncm.ilike.%${search}%`);
+      }
+      if (onlyLocal) query = query.is('bling_id', null);
+      if (onlyBling) query = query.not('bling_id', 'is', null);
+      const { data, error } = await query;
+      if (!error && data) return data;
+    } catch (err) {
+      console.warn('Fallback memória ao buscar produtos:', err.message);
+    }
+  }
+
+  let list = memoryProducts.filter(p => p.ativo !== false);
+  if (search) {
+    const q = search.toLowerCase();
+    list = list.filter(p => (p.nome || '').toLowerCase().includes(q) || (p.codigo || '').toLowerCase().includes(q));
+  }
+  if (onlyLocal) list = list.filter(p => !p.bling_id);
+  if (onlyBling) list = list.filter(p => !!p.bling_id);
+  return list.slice(offset, offset + limit);
+}
+
+async function getProductById(id) {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.PRODUCTS)
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  return memoryProducts.find(p => p.id === id || String(p.bling_id) === String(id)) || null;
+}
+
+async function findProductByCode(codigo) {
+  if (!codigo) return null;
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.PRODUCTS)
+        .select('*')
+        .eq('codigo', codigo.trim())
+        .single();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  return memoryProducts.find(p => (p.codigo || '').trim().toLowerCase() === codigo.trim().toLowerCase()) || null;
+}
+
+async function findProductByBlingId(blingId) {
+  if (!blingId) return null;
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.PRODUCTS)
+        .select('*')
+        .eq('bling_id', blingId)
+        .single();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  return memoryProducts.find(p => String(p.bling_id) === String(blingId)) || null;
+}
+
+async function saveProduct(productData, userId = null) {
+  const now = new Date().toISOString();
+  const payload = {
+    ...productData,
+    sincronizado_bling: productData.sincronizado_bling === true, // Default false conforme regra
+    updated_at: now
+  };
+  if (!payload.id) {
+    payload.created_by = userId;
+    payload.created_at = now;
+  }
+
+  // Prevenção de duplicatas por código
+  if (!payload.id && payload.codigo) {
+    const existing = await findProductByCode(payload.codigo);
+    if (existing) payload.id = existing.id;
+  }
+
+  if (supabase) {
+    try {
+      if (!payload.id) {
+        const { data, error } = await supabase
+          .from(TABLES.PRODUCTS)
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      } else {
+        const { id, ...updateFields } = payload;
+        const { data, error } = await supabase
+          .from(TABLES.PRODUCTS)
+          .update(updateFields)
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
+    } catch (err) {
+      console.warn('Fallback memória ao salvar produto:', err.message);
+    }
+  }
+
+  const generatedId = payload.id || `prod-${Date.now()}`;
+  const saved = { ...payload, id: generatedId };
+  const idx = memoryProducts.findIndex(p => p.id === generatedId);
+  if (idx >= 0) memoryProducts[idx] = saved;
+  else memoryProducts.unshift(saved);
+  return saved;
+}
+
+// ==========================================================================
+// FUNÇÕES: PROJETOS / OBRAS / CENTROS DE CUSTO & VERBA
+// ==========================================================================
+
+async function getAllProjects({ status } = {}) {
+  if (supabase) {
+    try {
+      let query = supabase
+        .from(TABLES.PROJECTS)
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (status) query = query.eq('status', status);
+      const { data, error } = await query;
+      if (!error && data) return data;
+    } catch (err) {
+      console.warn('Fallback memória ao buscar projetos:', err.message);
+    }
+  }
+  let list = memoryProjects;
+  if (status) list = list.filter(p => p.status === status);
+  return list;
+}
+
+async function getProjectById(id) {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.PROJECTS)
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  return memoryProjects.find(p => p.id === id) || null;
+}
+
+async function saveProject(projectData, userId = null) {
+  const now = new Date().toISOString();
+  const payload = { ...projectData, updated_at: now };
+  if (!payload.id) {
+    payload.created_by = userId;
+    payload.created_at = now;
+    if (!payload.codigo) payload.codigo = `PRJ-${new Date().getFullYear()}-${String(memoryProjects.length + 1).padStart(3, '0')}`;
+  }
+
+  if (supabase) {
+    try {
+      if (!payload.id) {
+        const { data, error } = await supabase
+          .from(TABLES.PROJECTS)
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      } else {
+        const { id, ...updateFields } = payload;
+        const { data, error } = await supabase
+          .from(TABLES.PROJECTS)
+          .update(updateFields)
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
+    } catch (err) {
+      console.warn('Fallback memória ao salvar projeto:', err.message);
+    }
+  }
+
+  const generatedId = payload.id || `proj-${Date.now()}`;
+  const saved = { ...payload, id: generatedId };
+  const idx = memoryProjects.findIndex(p => p.id === generatedId);
+  if (idx >= 0) memoryProjects[idx] = saved;
+  else memoryProjects.unshift(saved);
+  return saved;
+}
+
+// Extrato de Material e Verba por Projeto (Calculado APENAS pelos itens vinculados à obra)
+async function getProjectMaterialExtract(projectId) {
+  const project = await getProjectById(projectId);
+  if (!project) throw new Error('Projeto não encontrado');
+
+  let itemsLinked = [];
+  let movements = [];
+
+  if (supabase) {
+    try {
+      const { data: itData } = await supabase
+        .from(TABLES.NFE_ITEMS)
+        .select(`
+          *,
+          entry:flrBling_nfe_entries (numero_nota, serie, fornecedor_nome, fornecedor_cnpj, data_emissao, data_entrada)
+        `)
+        .eq('projeto_id', projectId);
+      itemsLinked = itData || [];
+
+      const { data: movData } = await supabase
+        .from(TABLES.STOCK_MOVEMENTS)
+        .select(`*, produto:flrBling_products(nome, codigo, unidade)`)
+        .eq('projeto_id', projectId)
+        .order('data_movimento', { ascending: false });
+      movements = movData || [];
+    } catch (e) {}
+  } else {
+    itemsLinked = memoryNfeItems.filter(i => i.projeto_id === projectId);
+    movements = memoryStockMovements.filter(m => m.projeto_id === projectId);
+  }
+
+  // Soma APENAS os itens vinculados a este projeto específico
+  const totalGastoMaterial = itemsLinked.reduce((s, it) => s + (parseFloat(it.valor_total) || 0), 0);
+  const verbaOrcada = parseFloat(project.verba_material_orcada) || 0;
+  const saldoVerbaRestante = verbaOrcada - totalGastoMaterial;
+  const percentualConsumido = verbaOrcada > 0 ? (totalGastoMaterial / verbaOrcada) * 100 : 0;
+
+  // Atualiza cache de verba_material_gasta no projeto
+  if (parseFloat(project.verba_material_gasta) !== totalGastoMaterial) {
+    await saveProject({ id: projectId, verba_material_gasta: totalGastoMaterial });
+  }
+
+  return {
+    project,
+    verbaOrcada,
+    totalGastoMaterial,
+    saldoVerbaRestante,
+    percentualConsumido,
+    itensComprados: itemsLinked,
+    movimentacoesRetiradas: movements
+  };
+}
+
+// ==========================================================================
+// FUNÇÕES: ENTRADA DE NOTAS FISCAIS (NF-e) & DE-PARA
+// ==========================================================================
+
+async function findDeParaRule(fornecedorCnpj, codigoFornecedor) {
+  if (!fornecedorCnpj || !codigoFornecedor) return null;
+  const cleanCnpj = fornecedorCnpj.replace(/\D/g, '');
+  const cleanCode = codigoFornecedor.trim();
+
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from(TABLES.DE_PARA_RULES)
+        .select(`*, produto:flrBling_products(*)`)
+        .eq('fornecedor_cnpj', cleanCnpj)
+        .eq('codigo_fornecedor', cleanCode)
+        .single();
+      if (data) return data;
+    } catch (e) {}
+  }
+
+  return memoryDeParaRules.find(r => r.fornecedor_cnpj === cleanCnpj && r.codigo_fornecedor === cleanCode) || null;
+}
+
+async function saveDeParaRule(fornecedorCnpj, codigoFornecedor, produtoId) {
+  if (!fornecedorCnpj || !codigoFornecedor || !produtoId) return null;
+  const cleanCnpj = fornecedorCnpj.replace(/\D/g, '');
+  const cleanCode = codigoFornecedor.trim();
+  const payload = {
+    fornecedor_cnpj: cleanCnpj,
+    codigo_fornecedor: cleanCode,
+    produto_id: produtoId,
+    updated_at: new Date().toISOString()
+  };
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.DE_PARA_RULES)
+        .upsert(payload, { onConflict: 'fornecedor_cnpj,codigo_fornecedor' })
+        .select()
+        .single();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+
+  const idx = memoryDeParaRules.findIndex(r => r.fornecedor_cnpj === cleanCnpj && r.codigo_fornecedor === cleanCode);
+  if (idx >= 0) memoryDeParaRules[idx] = payload;
+  else memoryDeParaRules.push(payload);
+  return payload;
+}
+
+async function getAllNfeEntries({ status, projetoId, limit = 100, offset = 0 } = {}) {
+  if (supabase) {
+    try {
+      let query = supabase
+        .from(TABLES.NFE_ENTRIES)
+        .select(`
+          *,
+          projeto:flrBling_projects (id, nome, codigo),
+          itens:flrBling_nfe_items (*, produto:flrBling_products(id, nome, codigo, unidade))
+        `)
+        .order('data_emissao', { ascending: false })
+        .range(offset, offset + limit - 1);
+      if (status) query = query.eq('status', status);
+      if (projetoId) query = query.eq('projeto_id', projetoId);
+      const { data, error } = await query;
+      if (!error && data) return data;
+    } catch (err) {
+      console.warn('Fallback memória ao buscar NF-e de entrada:', err.message);
+    }
+  }
+
+  let list = memoryNfeEntries;
+  if (status) list = list.filter(n => n.status === status);
+  if (projetoId) list = list.filter(n => n.projeto_id === projetoId);
+  return list.slice(offset, offset + limit);
+}
+
+async function getNfeEntryById(id) {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.NFE_ENTRIES)
+        .select(`
+          *,
+          projeto:flrBling_projects (id, nome, codigo),
+          itens:flrBling_nfe_items (*, produto:flrBling_products(id, nome, codigo, unidade))
+        `)
+        .eq('id', id)
+        .single();
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+  return memoryNfeEntries.find(n => n.id === id) || null;
+}
+
+// Salva a NF-e de entrada completa: cabeçalho + itens + movimentação de estoque + regras de De-Para
+async function saveNfeEntryWithItems(entryData, items = [], userId = null) {
+  const now = new Date().toISOString();
+  const cleanCnpj = (entryData.fornecedor_cnpj || '').replace(/\D/g, '');
+
+  const entryPayload = {
+    ...entryData,
+    fornecedor_cnpj: cleanCnpj,
+    updated_at: now
+  };
+  if (!entryPayload.id) {
+    entryPayload.created_by = userId;
+    entryPayload.created_at = now;
+  }
+
+  let entryId = entryPayload.id;
+
+  if (supabase) {
+    try {
+      if (!entryId) {
+        const { data, error } = await supabase
+          .from(TABLES.NFE_ENTRIES)
+          .insert(entryPayload)
+          .select()
+          .single();
+        if (error) throw error;
+        entryId = data.id;
+      } else {
+        const { id, ...updateFields } = entryPayload;
+        await supabase.from(TABLES.NFE_ENTRIES).update(updateFields).eq('id', entryId);
+      }
+
+      // Deletar itens anteriores se houver e reinserir
+      await supabase.from(TABLES.NFE_ITEMS).delete().eq('nfe_entry_id', entryId);
+
+      const itemsToInsert = [];
+      for (let idx = 0; idx < items.length; idx++) {
+        const it = items[idx];
+        let produtoId = it.produto_id || null;
+
+        // Se o usuário solicitou cadastrar como novo produto local
+        if (!produtoId && it.criar_novo_produto) {
+          const newProd = await saveProduct({
+            codigo: it.codigo_fornecedor || `PRD-${Date.now()}-${idx}`,
+            nome: it.descricao_fornecedor,
+            unidade: it.unidade_fornecedor || 'UN',
+            preco_custo: parseFloat(it.valor_unitario) || 0,
+            preco_venda: (parseFloat(it.valor_unitario) || 0) * 1.4, // margem padrão
+            ncm: it.ncm || null,
+            sincronizado_bling: false // Default FALSE
+          }, userId);
+          produtoId = newProd.id;
+        }
+
+        // Salva regra de De-Para automaticamente se houver produto vinculado
+        if (produtoId && it.codigo_fornecedor && cleanCnpj) {
+          await saveDeParaRule(cleanCnpj, it.codigo_fornecedor, produtoId);
+        }
+
+        const itemObj = {
+          nfe_entry_id: entryId,
+          numero_item: idx + 1,
+          codigo_fornecedor: it.codigo_fornecedor || '',
+          descricao_fornecedor: it.descricao_fornecedor || '',
+          ncm: it.ncm || '',
+          cfop: it.cfop || '',
+          unidade_fornecedor: it.unidade_fornecedor || 'UN',
+          quantidade: parseFloat(it.quantidade) || 1,
+          valor_unitario: parseFloat(it.valor_unitario) || 0,
+          valor_total: parseFloat(it.valor_total) || (parseFloat(it.quantidade) * parseFloat(it.valor_unitario)),
+          produto_id: produtoId,
+          bling_product_id: it.bling_product_id || null,
+          destino_estoque: it.destino_estoque || entryPayload.destino_estoque_padrao || 'flr',
+          projeto_id: it.projeto_id || entryPayload.projeto_id || null
+        };
+        itemsToInsert.push(itemObj);
+
+        // Movimentação de estoque da entrada da nota
+        if (produtoId) {
+          await registerStockMovement({
+            produto_id: produtoId,
+            tipo: 'entrada_nfe',
+            quantidade: parseFloat(it.quantidade) || 1,
+            destino: itemObj.destino_estoque,
+            projeto_id: itemObj.projeto_id,
+            nfe_entry_id: entryId,
+            observacoes: `Entrada NF-e #${entryPayload.numero_nota} (${entryPayload.fornecedor_nome})`
+          }, userId);
+        }
+      }
+
+      if (itemsToInsert.length > 0) {
+        await supabase.from(TABLES.NFE_ITEMS).insert(itemsToInsert);
+      }
+
+      // Recalcular verba gasta nos projetos afetados
+      const distinctProjects = [...new Set(itemsToInsert.map(i => i.projeto_id).filter(Boolean))];
+      for (const pId of distinctProjects) {
+        await getProjectMaterialExtract(pId);
+      }
+
+      return getNfeEntryById(entryId);
+    } catch (err) {
+      console.warn('Fallback memória ao salvar NF-e:', err.message);
+    }
+  }
+
+  // Memory fallback
+  const generatedId = entryId || `nfe-${Date.now()}`;
+  const savedEntry = {
+    ...entryPayload,
+    id: generatedId,
+    itens: items.map((it, idx) => ({ ...it, id: `nfei-${Date.now()}-${idx}`, nfe_entry_id: generatedId }))
+  };
+  const idx = memoryNfeEntries.findIndex(n => n.id === generatedId);
+  if (idx >= 0) memoryNfeEntries[idx] = savedEntry;
+  else memoryNfeEntries.unshift(savedEntry);
+  return savedEntry;
+}
+
+// ==========================================================================
+// FUNÇÕES: MOVIMENTAÇÕES DE ESTOQUE & RASTREABILIDADE
+// ==========================================================================
+
+async function registerStockMovement(movementData, userId = null) {
+  const now = new Date().toISOString();
+  const payload = {
+    ...movementData,
+    quantidade: parseFloat(movementData.quantidade) || 0,
+    created_by: userId,
+    created_at: now
+  };
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.STOCK_MOVEMENTS)
+        .insert(payload)
+        .select()
+        .single();
+      if (error) throw error;
+
+      // Se for entrada ou saída do Almoxarifado FLR, atualiza o saldo físico do produto
+      if (payload.destino === 'flr' || payload.destino === 'ambos') {
+        const prod = await getProductById(payload.produto_id);
+        if (prod) {
+          const saldoAtual = parseFloat(prod.estoque_atual) || 0;
+          let novoSaldo = saldoAtual;
+          if (payload.tipo === 'entrada_nfe' || payload.tipo === 'devolucao') {
+            novoSaldo += payload.quantidade;
+          } else if (payload.tipo === 'saida_producao' || payload.tipo === 'ajuste_negativo') {
+            novoSaldo = Math.max(0, saldoAtual - payload.quantidade);
+          }
+          await supabase.from(TABLES.PRODUCTS).update({ estoque_atual: novoSaldo, updated_at: now }).eq('id', prod.id);
+        }
+      }
+      return data;
+    } catch (e) {
+      console.warn('Fallback memória ao registrar movimento estoque:', e.message);
+    }
+  }
+
+  const generatedId = `mov-${Date.now()}`;
+  const saved = { ...payload, id: generatedId };
+  memoryStockMovements.unshift(saved);
+  return saved;
+}
+
+async function getStockMovements({ produtoId, projetoId, destino, limit = 100 } = {}) {
+  if (supabase) {
+    try {
+      let query = supabase
+        .from(TABLES.STOCK_MOVEMENTS)
+        .select(`
+          *,
+          produto:flrBling_products(id, nome, codigo, unidade),
+          projeto:flrBling_projects(id, nome, codigo),
+          nfe:flrBling_nfe_entries(id, numero_nota, fornecedor_nome)
+        `)
+        .order('data_movimento', { ascending: false })
+        .limit(limit);
+      if (produtoId) query = query.eq('produto_id', produtoId);
+      if (projetoId) query = query.eq('projeto_id', projetoId);
+      if (destino) query = query.eq('destino', destino);
+      const { data, error } = await query;
+      if (!error && data) return data;
+    } catch (e) {}
+  }
+
+  let list = memoryStockMovements;
+  if (produtoId) list = list.filter(m => m.produto_id === produtoId);
+  if (projetoId) list = list.filter(m => m.projeto_id === projetoId);
+  if (destino) list = list.filter(m => m.destino === destino);
+  return list.slice(0, limit);
+}
+
+// ==========================================================================
+// EXPORTS
+// ==========================================================================
+
 module.exports = {
   supabase,
   TABLES,
@@ -1038,225 +1886,25 @@ module.exports = {
   saveQuote,
   updateQuote,
   updateQuoteBlingSync,
-  generateQuoteNumber
+  generateQuoteNumber,
+  // Produtos Locais
+  getAllProducts,
+  getProductById,
+  findProductByCode,
+  findProductByBlingId,
+  saveProduct,
+  // Projetos & Verbas
+  getAllProjects,
+  getProjectById,
+  saveProject,
+  getProjectMaterialExtract,
+  // NF-e Entradas & De-Para
+  findDeParaRule,
+  saveDeParaRule,
+  getAllNfeEntries,
+  getNfeEntryById,
+  saveNfeEntryWithItems,
+  // Movimentações de Estoque
+  registerStockMovement,
+  getStockMovements
 };
-
-// ==========================================================================
-// FUNÇÕES: GESTÃO DE KITS DE PRODUTOS
-// ==========================================================================
-
-async function getAllKits({ apenasAtivos = false } = {}) {
-  if (!supabase) return [];
-  try {
-    let query = supabase
-      .from(TABLES.KITS)
-      .select(`*, itens:${TABLES.KIT_ITEMS}(*)`)
-      .order('created_at', { ascending: false });
-    if (apenasAtivos) query = query.eq('ativo', true);
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('Erro ao buscar kits:', err.message);
-    return [];
-  }
-}
-
-async function getKitById(id) {
-  if (!supabase) return null;
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.KITS)
-      .select(`*, itens:${TABLES.KIT_ITEMS}(*)`)
-      .eq('id', id)
-      .single();
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Erro ao buscar kit:', err.message);
-    return null;
-  }
-}
-
-async function saveKit(kitData, userId = null) {
-  if (!supabase) throw new Error('Supabase não disponível');
-  const { id, itens = [], ...fields } = kitData;
-  const now = new Date().toISOString();
-
-  // Upsert no cabeçalho do kit
-  const kitPayload = { ...fields, updated_at: now };
-  if (!id) {
-    kitPayload.created_by = userId;
-    kitPayload.created_at = now;
-  }
-
-  let kitId = id;
-  if (id) {
-    const { data, error } = await supabase
-      .from(TABLES.KITS)
-      .update(kitPayload)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    kitId = data.id;
-  } else {
-    const { data, error } = await supabase
-      .from(TABLES.KITS)
-      .insert(kitPayload)
-      .select()
-      .single();
-    if (error) throw error;
-    kitId = data.id;
-  }
-
-  // Substituir todos os itens (delete + insert)
-  await supabase.from(TABLES.KIT_ITEMS).delete().eq('kit_id', kitId);
-  if (itens.length > 0) {
-    const itemsToInsert = itens.map((it, idx) => ({
-      kit_id: kitId,
-      bling_product_id: it.bling_product_id || null,
-      product_code: it.product_code || '',
-      product_name: it.product_name || '',
-      product_unit: it.product_unit || 'UN',
-      quantity: parseFloat(it.quantity) || 1,
-      unit_price: parseFloat(it.unit_price) || 0,
-      imagem_url: it.imagem_url || null,
-      sort_order: idx
-    }));
-    const { error: itemsErr } = await supabase.from(TABLES.KIT_ITEMS).insert(itemsToInsert);
-    if (itemsErr) throw itemsErr;
-  }
-
-  return getKitById(kitId);
-}
-
-async function deleteKit(id) {
-  if (!supabase) throw new Error('Supabase não disponível');
-  const { error } = await supabase
-    .from(TABLES.KITS)
-    .update({ ativo: false, updated_at: new Date().toISOString() })
-    .eq('id', id);
-  if (error) throw error;
-  return true;
-}
-
-// ==========================================================================
-// FUNÇÕES: GESTÃO DE ORÇAMENTOS
-// ==========================================================================
-
-async function generateQuoteNumber() {
-  if (!supabase) return `ORC-${Date.now()}`;
-  try {
-    const year = new Date().getFullYear();
-    const prefix = `ORC-${year}-`;
-    const { data } = await supabase
-      .from(TABLES.QUOTES)
-      .select('numero')
-      .ilike('numero', `${prefix}%`)
-      .order('numero', { ascending: false })
-      .limit(1);
-    let seq = 1;
-    if (data && data.length > 0) {
-      const lastNum = parseInt(data[0].numero.replace(prefix, ''), 10);
-      if (!isNaN(lastNum)) seq = lastNum + 1;
-    }
-    return `${prefix}${String(seq).padStart(3, '0')}`;
-  } catch {
-    return `ORC-${Date.now()}`;
-  }
-}
-
-async function getAllQuotes({ status, contactId, limit = 100, offset = 0 } = {}) {
-  if (!supabase) return [];
-  try {
-    let query = supabase
-      .from(TABLES.QUOTES)
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-    if (status) query = query.eq('status', status);
-    if (contactId) query = query.eq('bling_contact_id', contactId);
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('Erro ao buscar orçamentos:', err.message);
-    return [];
-  }
-}
-
-async function getQuoteById(id) {
-  if (!supabase) return null;
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.QUOTES)
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Erro ao buscar orçamento:', err.message);
-    return null;
-  }
-}
-
-async function saveQuote(quoteData, userId = null) {
-  if (!supabase) throw new Error('Supabase não disponível');
-  const now = new Date().toISOString();
-  const payload = { ...quoteData, updated_at: now };
-  if (!payload.id) {
-    payload.created_by = userId;
-    payload.created_at = now;
-    if (!payload.numero) payload.numero = await generateQuoteNumber();
-    const { data, error } = await supabase
-      .from(TABLES.QUOTES)
-      .insert(payload)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  } else {
-    const { id, ...updateFields } = payload;
-    const { data, error } = await supabase
-      .from(TABLES.QUOTES)
-      .update(updateFields)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  }
-}
-
-async function updateQuote(id, fields) {
-  if (!supabase) throw new Error('Supabase não disponível');
-  const { data, error } = await supabase
-    .from(TABLES.QUOTES)
-    .update({ ...fields, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}
-
-async function updateQuoteBlingSync(id, { blingPedidoId, blingPropostaId, tipo }) {
-  if (!supabase) throw new Error('Supabase não disponível');
-  const update = {
-    bling_exportado_em: new Date().toISOString(),
-    bling_export_tipo: tipo,
-    updated_at: new Date().toISOString()
-  };
-  if (blingPedidoId) update.bling_pedido_id = blingPedidoId;
-  if (blingPropostaId) update.bling_proposta_id = blingPropostaId;
-  const { data, error } = await supabase
-    .from(TABLES.QUOTES)
-    .update(update)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}

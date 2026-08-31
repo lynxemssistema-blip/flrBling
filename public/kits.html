@@ -1257,7 +1257,55 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
             <span>Dashboard Geral</span>
           </a>
 
-          <div class="nav-section-title">CADASTROS</div>
+          <!-- 1. GESTÃO OPERACIONAL FLR (APP) -->
+          <div class="nav-section-title">
+            <span>OPERAÇÃO FLR</span>
+            <span class="badge-source-app">App</span>
+          </div>
+
+          <a href="projetos.html" class="nav-item" id="navProjects">
+            <i class="fa-solid fa-helmet-safety text-orange"></i>
+            <span>Projetos & Obras (Verbas)</span>
+          </a>
+
+          <a href="orcamentos.html" class="nav-item" id="navQuotes">
+            <i class="fa-solid fa-file-invoice-dollar text-emerald"></i>
+            <span>Construtor de Orçamentos</span>
+            <span class="nav-badge" id="navQuotesCount">0</span>
+          </a>
+
+          <a href="kits.html" class="nav-item" id="navKits" class="nav-item active">
+            <i class="fa-solid fa-layer-group" style="color:#F59E0B"></i>
+            <span>Kits de Produtos</span>
+          </a>
+
+          <a href="ordens-servico.html" class="nav-item" id="navServiceOrders">
+            <i class="fa-solid fa-clipboard-list text-purple"></i>
+            <span>Ordens de Serviço (OS)</span>
+            <span class="nav-badge" id="navOsCount">0</span>
+          </a>
+
+          <!-- 2. COMPRAS, NF-E & ESTOQUE (DE-PARA) -->
+          <div class="nav-section-title">
+            <span>COMPRAS & ESTOQUE</span>
+            <span class="badge-source-app">App</span>
+          </div>
+
+          <a href="nfe.html" class="nav-item" id="navNfe">
+            <i class="fa-solid fa-receipt text-emerald"></i>
+            <span>Entrada NF-e (De-Para)</span>
+          </a>
+
+          <a href="estoque.html" class="nav-item" id="navStock">
+            <i class="fa-solid fa-warehouse text-blue"></i>
+            <span>Almoxarifado & Saldos</span>
+          </a>
+
+          <!-- 3. CADASTROS GERAIS (BLING / APP) -->
+          <div class="nav-section-title">
+            <span>CADASTROS</span>
+            <span class="badge-source-bling">Bling</span>
+          </div>
           
           <a href="clientes.html" class="nav-item" id="navClients">
             <i class="fa-solid fa-users text-emerald"></i>
@@ -1281,12 +1329,11 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
             <span>Categorias</span>
           </a>
 
-          <a href="kits.html" class="nav-item" id="navKits" class="nav-item active">
-            <i class="fa-solid fa-layer-group" style="color:#F59E0B"></i>
-            <span>Kits de Produtos</span>
-          </a>
-
-          <div class="nav-section-title">VENDAS & COMERCIAL</div>
+          <!-- 4. VENDAS & COMERCIAL (BLING) -->
+          <div class="nav-section-title">
+            <span>COMERCIAL BLING</span>
+            <span class="badge-source-bling">Bling</span>
+          </div>
 
           <a href="pedidos.html" class="nav-item" id="navOrders">
             <i class="fa-solid fa-cart-shopping text-blue"></i>
@@ -1294,15 +1341,9 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
             <span class="nav-badge" id="navOrdersCount">0</span>
           </a>
 
-          <a href="orcamentos.html" class="nav-item" id="navQuotes">
-            <i class="fa-solid fa-file-invoice-dollar" style="color:#10B981"></i>
-            <span>Orçamentos</span>
-            <span class="nav-badge" id="navQuotesCount">0</span>
-          </a>
-
           <a href="propostas.html" class="nav-item" id="navProposals">
             <i class="fa-solid fa-file-signature text-purple"></i>
-            <span>Propostas / Orçamentos</span>
+            <span>Propostas no Bling</span>
           </a>
 
           <a href="vendedores.html" class="nav-item" id="navSellers">
@@ -1310,12 +1351,11 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
             <span>Vendedores & Comissões</span>
           </a>
 
-          <a href="nfe.html" class="nav-item" id="navNfe">
-            <i class="fa-solid fa-receipt text-emerald"></i>
-            <span>Notas Fiscais (NF-e)</span>
-          </a>
-
-          <div class="nav-section-title">FINANCEIRO</div>
+          <!-- 5. FINANCEIRO -->
+          <div class="nav-section-title">
+            <span>FINANCEIRO</span>
+            <span class="badge-source-bling">Bling</span>
+          </div>
 
           <a href="contas-receber.html" class="nav-item" id="navReceivables">
             <i class="fa-solid fa-hand-holding-dollar text-emerald"></i>
@@ -1327,20 +1367,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
             <span>Contas a Pagar</span>
           </a>
 
-          <div class="nav-section-title">SERVIÇOS & OPERACIONAL</div>
-
-          <a href="ordens-servico.html" class="nav-item" id="navServiceOrders">
-            <i class="fa-solid fa-helmet-safety text-orange"></i>
-            <span>Ordens de Serviço (OS)</span>
-            <span class="nav-badge" id="navOsCount">0</span>
-          </a>
-
-          <a href="estoque.html" class="nav-item" id="navStock">
-            <i class="fa-solid fa-warehouse text-blue"></i>
-            <span>Saldos de Estoque</span>
-          </a>
-
-          <!-- Painel Exclusivo de Gestão de Usuários (Superadmin) -->
+          <!-- ADMINISTRAÇÃO -->
           <div id="superadminNavSection">
             <div class="nav-section-title">ADMINISTRAÇÃO</div>
             <a href="javascript:void(0)" class="nav-item" id="navOpenUsersManager">
@@ -1381,7 +1408,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
           <div class="breadcrumb-container">
             <span class="bc-item">Início</span>
             <i class="fa-solid fa-chevron-right bc-separator"></i>
-            <span class="bc-item" id="bcCategoryName">Cadastros</span>
+            <span class="bc-item" id="bcCategoryName">Operação FLR</span>
             <i class="fa-solid fa-chevron-right bc-separator"></i>
             <span class="bc-item active" id="bcViewName">Kits de Produtos</span>
           </div>
@@ -3706,12 +3733,336 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
           <button type="button" class="modal-close" id="btnCloseQuotePrint">&times;</button>
         </div>
       </div>
-      <div class="modal-body" style="padding:24px;max-height:80vh;overflow-y:auto;" id="quotePrintArea">
-        <!-- Conteúdo gerado dinamicamente -->
+  <!-- ==========================================================================
+       16. MODAL: PROJETO / OBRA COM CONTROLE DE VERBA
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalProject" style="z-index:10000;">
+    <div class="modal-box" style="max-width:620px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-helmet-safety text-orange"></i>
+          <h3 id="projectModalTitle">Novo Projeto / Obra</h3>
+        </div>
+        <button type="button" class="modal-close" id="btnCloseProjectModal">&times;</button>
+      </div>
+      <form id="formProject" onsubmit="event.preventDefault();handleSaveProject();">
+        <div class="modal-body" style="padding:20px;max-height:calc(85vh - 60px);overflow-y:auto;">
+          <input type="hidden" id="projectId">
+
+          <div class="form-group">
+            <label for="projectNome">Nome da Obra / Projeto *</label>
+            <input type="text" id="projectNome" class="form-control" placeholder="Ex: Climatização Split - Clínica Saúde Plena" required>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+            <div class="form-group">
+              <label for="projectCodigo">Código da Obra</label>
+              <input type="text" id="projectCodigo" class="form-control" placeholder="PRJ-2026-001">
+            </div>
+            <div class="form-group">
+              <label for="projectStatus">Status</label>
+              <select id="projectStatus" class="form-control">
+                <option value="planejamento">Planejamento</option>
+                <option value="em_andamento" selected>Em Andamento</option>
+                <option value="pausado">Pausado</option>
+                <option value="concluido">Concluído</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:10px;">
+            <div class="form-group">
+              <label for="projectClienteNome">Cliente / Razão Social</label>
+              <input type="text" id="projectClienteNome" class="form-control" placeholder="Nome do Cliente">
+            </div>
+            <div class="form-group">
+              <label for="projectResponsavel">Responsável Técnico</label>
+              <input type="text" id="projectResponsavel" class="form-control" placeholder="Ex: Téc. Fernando">
+            </div>
+          </div>
+
+          <!-- Verbas Financeiras -->
+          <div class="order-section" style="margin-top:16px;">
+            <div class="order-section-title">Controle Financeiro de Verbas</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label for="projectVerbaTotal">Valor Total do Contrato (R$)</label>
+                <input type="number" id="projectVerbaTotal" class="form-control" step="0.01" value="0.00" placeholder="Ex: 1000.00">
+                <small class="text-muted">Valor cobrado do cliente</small>
+              </div>
+              <div class="form-group">
+                <label for="projectVerbaMaterial">Verba Estipulada para Material (R$)</label>
+                <input type="number" id="projectVerbaMaterial" class="form-control" step="0.01" value="0.00" placeholder="Ex: 400.00" required>
+                <small class="text-muted">Teto máximo para compras desta obra</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:12px;">
+            <label for="projectObservacoes">Observações Gerais</label>
+            <textarea id="projectObservacoes" class="form-control" rows="2" placeholder="Informações de acesso, restrições ou detalhes técnicos..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding:12px 20px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border-color);">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnCancelProjectModal">Cancelar</button>
+          <button type="submit" class="btn btn-bling-primary btn-sm">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Projeto
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       17. MODAL: EXTRATO DE MATERIAIS & VERBA DO PROJETO
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalProjectExtract" style="z-index:10001;">
+    <div class="modal-box modal-xl">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-list-check text-blue"></i>
+          <h3 id="extractProjectTitle">Extrato da Obra</h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="btn btn-sm" style="background:#10B981;color:#fff;" onclick="openStockWithdrawalModal()">
+            <i class="fa-solid fa-truck-ramp-box"></i> Registrar Retirada do Almoxarifado
+          </button>
+          <button type="button" class="modal-close" id="btnCloseExtractModal">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:20px;max-height:calc(85vh - 60px);overflow-y:auto;">
+        <!-- Termômetro de Verba -->
+        <div id="extractBudgetCards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+          <!-- Gerado por JS -->
+        </div>
+
+        <!-- Abas do Extrato: 1. Notas e Itens Comprados | 2. Retiradas de Almoxarifado -->
+        <div class="order-section">
+          <div class="order-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>1. Itens e Materiais Faturados nas NF-e Vinculadas</span>
+          </div>
+          <table class="kit-items-table">
+            <thead>
+              <tr>
+                <th>NF-e / Fornecedor</th>
+                <th>Data</th>
+                <th>Material / Descrição</th>
+                <th style="width:80px;text-align:center;">Qtd</th>
+                <th style="width:110px;text-align:right;">Valor Unit.</th>
+                <th style="width:120px;text-align:right;">Subtotal</th>
+                <th style="width:100px;text-align:center;">Destino</th>
+              </tr>
+            </thead>
+            <tbody id="extractNfeItemsBody">
+              <!-- JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="order-section" style="margin-top:20px;">
+          <div class="order-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>2. Histórico de Retiradas para Produção / Almoxarifado</span>
+          </div>
+          <table class="kit-items-table">
+            <thead>
+              <tr>
+                <th>Data / Hora</th>
+                <th>Material</th>
+                <th style="width:80px;text-align:center;">Qtd Retirada</th>
+                <th>Responsável / Técnico</th>
+                <th>Observações</th>
+              </tr>
+            </thead>
+            <tbody id="extractWithdrawalsBody">
+              <!-- JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
-  <script src="js/app.js?v=3.0"></script>
+  <!-- ==========================================================================
+       18. MODAL: RETIRADA DE ALMOXARIFADO PARA OBRA
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalStockWithdrawal" style="z-index:10002;">
+    <div class="modal-box" style="max-width:540px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-truck-ramp-box text-emerald"></i>
+          <h3>Registrar Retirada de Almoxarifado</h3>
+        </div>
+        <button type="button" class="modal-close" id="btnCloseWithdrawalModal">&times;</button>
+      </div>
+      <form id="formStockWithdrawal" onsubmit="event.preventDefault();handleSaveWithdrawal();">
+        <div class="modal-body" style="padding:20px;">
+          <input type="hidden" id="withdrawalProjectId">
+
+          <div class="form-group">
+            <label for="withdrawalProdutoId">Produto / Material do Almoxarifado *</label>
+            <select id="withdrawalProdutoId" class="form-control" required>
+              <option value="">Selecione o produto...</option>
+            </select>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+            <div class="form-group">
+              <label for="withdrawalQuantidade">Quantidade a Retirar *</label>
+              <input type="number" id="withdrawalQuantidade" class="form-control" step="0.001" min="0.001" required placeholder="Ex: 5">
+            </div>
+            <div class="form-group">
+              <label for="withdrawalResponsavel">Responsável / Quem Retirou *</label>
+              <input type="text" id="withdrawalResponsavel" class="form-control" placeholder="Ex: Téc. Fernando" required>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:10px;">
+            <label for="withdrawalObservacoes">Observações (Finalidade / Etapa da Obra)</label>
+            <textarea id="withdrawalObservacoes" class="form-control" rows="2" placeholder="Ex: Tubulação de cobre para o 2º andar..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding:12px 20px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border-color);">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnCancelWithdrawalModal">Cancelar</button>
+          <button type="submit" class="btn btn-bling-primary btn-sm">
+            <i class="fa-solid fa-check"></i> Confirmar Retirada
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       19. MODAL: ENTRADA DE NF-E COM IMPORTAÇÃO DE XML & TABELA DE-PARA
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalNfeEntry" style="z-index:10000;">
+    <div class="modal-box modal-xl" style="max-width:1100px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-receipt text-emerald"></i>
+          <h3 id="nfeEntryModalTitle">Entrada de Nota Fiscal (NF-e com De-Para)</h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label class="btn btn-sm" style="background:#1665D8;color:#fff;cursor:pointer;margin:0;">
+            <i class="fa-solid fa-file-code"></i> Importar Arquivo XML
+            <input type="file" id="nfeXmlFileInput" accept=".xml" style="display:none;" onchange="handleNfeXmlUpload(event)">
+          </label>
+          <button type="button" class="modal-close" id="btnCloseNfeEntryModal">&times;</button>
+        </div>
+      </div>
+      <form id="formNfeEntry" onsubmit="event.preventDefault();handleSaveNfeEntry();">
+        <div class="modal-body" style="padding:20px;max-height:calc(85vh - 60px);overflow-y:auto;">
+          <input type="hidden" id="nfeEntryId">
+
+          <!-- Cabeçalho da Nota -->
+          <div class="order-section" style="margin-bottom:16px;">
+            <div class="order-section-title">1. Dados da Nota Fiscal de Entrada</div>
+            <div style="display:grid;grid-template-columns:1.5fr 1fr 2fr 1fr;gap:10px;">
+              <div class="form-group">
+                <label for="nfeNumero">Número da Nota *</label>
+                <input type="text" id="nfeNumero" class="form-control" placeholder="12450" required>
+              </div>
+              <div class="form-group">
+                <label for="nfeSerie">Série</label>
+                <input type="text" id="nfeSerie" class="form-control" value="1">
+              </div>
+              <div class="form-group">
+                <label for="nfeFornecedorNome">Fornecedor / Razão Social *</label>
+                <input type="text" id="nfeFornecedorNome" class="form-control" placeholder="Distribuidora de Peças Ltda" required>
+              </div>
+              <div class="form-group">
+                <label for="nfeFornecedorCnpj">CNPJ do Fornecedor</label>
+                <input type="text" id="nfeFornecedorCnpj" class="form-control" placeholder="00.000.000/0001-00">
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1.5fr 1fr;gap:10px;margin-top:10px;">
+              <div class="form-group">
+                <label for="nfeDataEmissao">Data de Emissão *</label>
+                <input type="date" id="nfeDataEmissao" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="nfeValorTotal">Valor Total da Nota (R$) *</label>
+                <input type="number" id="nfeValorTotal" class="form-control" step="0.01" required placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label for="nfeDestinoPadrao">Destino do Estoque *</label>
+                <select id="nfeDestinoPadrao" class="form-control" onchange="applyDestinoToAllItems(this.value)">
+                  <option value="flr" selected>🏢 Almoxarifado Central FLR</option>
+                  <option value="projeto">🏗️ Estoque do Projeto / Obra</option>
+                  <option value="ambos">🔄 Ambos (Almoxarifado + Alocação Direta)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="nfeProjetoId">Vincular a Obra/Projeto</label>
+                <select id="nfeProjetoId" class="form-control" onchange="applyProjetoToAllItems(this.value)">
+                  <option value="">Nenhum (Uso Geral)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top:10px;">
+              <label for="nfeChaveAcesso">Chave de Acesso SEFAZ (44 dígitos)</label>
+              <input type="text" id="nfeChaveAcesso" class="form-control" placeholder="35260800000000000000550010000124501000124501">
+            </div>
+          </div>
+
+          <!-- Tabela de Itens e De-Para -->
+          <div class="order-section">
+            <div class="order-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+              <span>2. Amarração de Itens da Nota com o Catálogo (De-Para)</span>
+              <button type="button" class="order-add-item-btn" onclick="addNfeManualRow()">
+                <i class="fa-solid fa-plus"></i> Adicionar Item Manual
+              </button>
+            </div>
+            <table class="kit-items-table">
+              <thead>
+                <tr>
+                  <th style="width:26px;">#</th>
+                  <th style="width:100px;">Cód. Forn.</th>
+                  <th>Descrição na Nota</th>
+                  <th style="width:70px;">Qtd</th>
+                  <th style="width:90px;">Valor Unit.</th>
+                  <th style="width:90px;">Total</th>
+                  <th style="width:220px;">Produto Interno (De-Para)</th>
+                  <th style="width:130px;">Destino Estoque</th>
+                  <th style="width:30px;"></th>
+                </tr>
+              </thead>
+              <tbody id="nfeItemsTableBody">
+                <!-- JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding:12px 20px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border-color);">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnCancelNfeModal">Cancelar</button>
+          <button type="submit" class="btn btn-bling-primary btn-sm">
+            <i class="fa-solid fa-check"></i> Salvar Entrada & Atualizar Estoque
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       20. MODAL: DETALHES DA NF-E DE ENTRADA
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalNfeDetails" style="z-index:10001;">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-file-invoice text-blue"></i>
+          <h3 id="nfeDetailsTitle">Detalhes da NF-e</h3>
+        </div>
+        <button type="button" class="modal-close" id="btnCloseNfeDetails">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:20px;max-height:80vh;overflow-y:auto;" id="nfeDetailsBody">
+        <!-- JS -->
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js?v=3.1"></script>
 </body>
 </html>

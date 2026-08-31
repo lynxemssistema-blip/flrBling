@@ -200,9 +200,21 @@ const MODULE_PERMISSION_DEFINITIONS = [
     ]
   },
   {
+    key: 'projects',
+    title: 'Projetos & Obras',
+    category: 'Operação FLR',
+    icon: 'fa-helmet-safety',
+    actions: [
+      { key: 'view', label: 'Visualizar Projetos' },
+      { key: 'create', label: 'Criar Projeto' },
+      { key: 'edit', label: 'Editar Projeto' },
+      { key: 'delete', label: 'Excluir Projeto' }
+    ]
+  },
+  {
     key: 'kits',
     title: 'Kits de Produtos',
-    category: 'Cadastros',
+    category: 'Operação FLR',
     icon: 'fa-layer-group',
     actions: [
       { key: 'view', label: 'Visualizar Kits' },
@@ -213,8 +225,8 @@ const MODULE_PERMISSION_DEFINITIONS = [
   },
   {
     key: 'quotes',
-    title: 'Orçamentos',
-    category: 'Vendas & Comercial',
+    title: 'Construtor de Orçamentos',
+    category: 'Operação FLR',
     icon: 'fa-file-invoice-dollar',
     actions: [
       { key: 'view', label: 'Visualizar Orçamentos' },
@@ -251,12 +263,81 @@ const MODULE_CONFIG = {
     category: 'Visão Executiva',
     endpoint: 'dashboard-summary'
   },
+  projects: {
+    title: 'Projetos & Obras (Verbas de Material)',
+    category: 'Operação FLR',
+    endpoint: 'projetos',
+    demoKey: 'projetos',
+    columns: ['Código', 'Nome da Obra / Projeto', 'Cliente', 'Verba Total', 'Verba Material', 'Gasto em NF-e', 'Saldo Verba', 'Status', 'Ações'],
+    filterTypeLabel: 'Status da Obra',
+    filterTypeOptions: [
+      { val: 'em_andamento', label: 'Em Andamento' },
+      { val: 'planejamento', label: 'Planejamento' },
+      { val: 'concluido', label: 'Concluído' }
+    ],
+    filterSituationOptions: []
+  },
+  quotes: {
+    title: 'Construtor de Orçamentos',
+    category: 'Operação FLR',
+    endpoint: 'orcamentos',
+    demoKey: 'pedidos',
+    columns: ['Número', 'Cliente', 'Título', 'Data', 'Validade', 'Total', 'Status', 'Origem / Bling', 'Ações'],
+    filterTypeLabel: 'Status',
+    filterTypeOptions: [
+      { val: 'rascunho', label: 'Rascunho' },
+      { val: 'apresentado', label: 'Apresentado' },
+      { val: 'aprovado', label: 'Aprovado' },
+      { val: 'cancelado', label: 'Cancelado' }
+    ],
+    filterSituationOptions: []
+  },
+  kits: {
+    title: 'Kits de Produtos',
+    category: 'Operação FLR',
+    endpoint: 'kits',
+    demoKey: 'produtos',
+    columns: ['Código', 'Nome do Kit', 'Itens', 'Preço Total', 'Preço Fixo?', 'Ativo', 'Ações'],
+    filterTypeLabel: 'Status',
+    filterTypeOptions: [{ val: 'true', label: 'Ativos' }, { val: 'false', label: 'Inativos' }],
+    filterSituationOptions: []
+  },
+  serviceOrders: {
+    title: 'Ordens de Serviço (OS)',
+    category: 'Operação FLR',
+    endpoint: 'ordens-servicos',
+    demoKey: 'ordensServicos',
+    columns: ['Número OS', 'Cliente', 'Descrição do Serviço', 'Responsável Técnico', 'Abertura', 'Previsão', 'Valor Total', 'Situação', 'Ações'],
+    filterTypeLabel: 'Responsável',
+    filterTypeOptions: [{ val: 'Equipe Alpha', label: 'Equipe Alpha' }, { val: 'Téc. Fernando', label: 'Téc. Fernando' }],
+    filterSituationOptions: [{ val: 'Em Execução', label: 'Em Execução' }, { val: 'Concluído', label: 'Concluído' }, { val: 'Aguardando Peças', label: 'Aguardando Peças' }]
+  },
+  nfe: {
+    title: 'Entrada de Notas Fiscais (NF-e com De-Para)',
+    category: 'Compras & Estoque',
+    endpoint: 'nfe-entradas',
+    demoKey: 'nfe',
+    columns: ['Número / Série', 'Fornecedor', 'Data Emissão', 'Destino Estoque', 'Projeto / Obra', 'Valor Total', 'De-Para Status', 'Ações'],
+    filterTypeLabel: 'Destino',
+    filterTypeOptions: [{ val: 'flr', label: 'Almoxarifado FLR' }, { val: 'projeto', label: 'Obra / Projeto' }, { val: 'ambos', label: 'Ambos' }],
+    filterSituationOptions: [{ val: 'concluido', label: 'Concluídas' }, { val: 'rascunho', label: 'Rascunhos' }]
+  },
+  stock: {
+    title: 'Almoxarifado & Saldos de Estoque',
+    category: 'Compras & Estoque',
+    endpoint: 'estoques/saldos',
+    demoKey: 'produtos',
+    columns: ['Código', 'Descrição do Material', 'Origem', 'Saldo Almoxarifado', 'Saldo Reservado', 'Disponível', 'Ações'],
+    filterTypeLabel: 'Depósito',
+    filterTypeOptions: [{ val: 'Geral', label: 'Depósito Central FLR' }],
+    filterSituationOptions: [{ val: 'A', label: 'Com Saldo' }]
+  },
   clients: {
     title: 'Clientes & Contatos',
     category: 'Cadastros',
     endpoint: 'contatos',
     demoKey: 'clientes',
-    columns: ['Código', 'Nome / Razão Social', 'Tipo', 'CPF / CNPJ', 'E-mail', 'Telefone', 'Cidade / UF', 'Situação', 'Ações'],
+    columns: ['Código', 'Nome / Razão Social', 'Tipo', 'CPF / CNPJ', 'E-mail', 'Telefone', 'Origem', 'Situação', 'Ações'],
     filterTypeLabel: 'Tipo de Pessoa',
     filterTypeOptions: [{ val: 'J', label: 'Pessoa Jurídica (PJ)' }, { val: 'F', label: 'Pessoa Física (PF)' }],
     filterSituationOptions: [{ val: 'A', label: 'Ativos' }, { val: 'I', label: 'Inativos' }]
@@ -266,7 +347,7 @@ const MODULE_CONFIG = {
     category: 'Cadastros',
     endpoint: 'produtos',
     demoKey: 'produtos',
-    columns: ['Foto', 'Código', 'Descrição do Produto', 'Categoria', 'Preço Venda', 'Preço Custo', 'Estoque', 'Unidade', 'Situação', 'Ações'],
+    columns: ['Foto', 'Código', 'Descrição do Produto', 'Categoria', 'Preço Venda', 'Preço Custo', 'Estoque', 'Origem', 'Situação', 'Ações'],
     filterTypeLabel: 'Tipo',
     filterTypeOptions: [{ val: 'P', label: 'Produto' }, { val: 'S', label: 'Serviço' }],
     filterSituationOptions: [{ val: 'A', label: 'Ativos' }, { val: 'I', label: 'Inativos' }]
@@ -281,9 +362,19 @@ const MODULE_CONFIG = {
     filterTypeOptions: [{ val: 'Serviços Técnicos', label: 'Serviços Técnicos' }],
     filterSituationOptions: [{ val: 'A', label: 'Ativos' }, { val: 'I', label: 'Inativos' }]
   },
+  categories: {
+    title: 'Categorias de Produtos & Serviços',
+    category: 'Cadastros',
+    endpoint: 'categorias/produtos',
+    demoKey: 'produtos',
+    columns: ['ID', 'Descrição da Categoria', 'Situação', 'Ações'],
+    filterTypeLabel: 'Tipo',
+    filterTypeOptions: [{ val: 'Geral', label: 'Geral' }],
+    filterSituationOptions: [{ val: 'A', label: 'Ativas' }]
+  },
   orders: {
     title: 'Pedidos de Venda',
-    category: 'Vendas & Comercial',
+    category: 'Comercial Bling',
     endpoint: 'pedidos-vendas',
     demoKey: 'pedidos',
     columns: ['Número', 'Cliente', 'Data', 'Vendedor', 'Itens', 'Valor Total', 'Situação', 'Ações'],
@@ -292,8 +383,8 @@ const MODULE_CONFIG = {
     filterSituationOptions: [{ val: 'Atendido', label: 'Atendido' }, { val: 'Em andamento', label: 'Em andamento' }, { val: 'Pendente', label: 'Pendente' }]
   },
   proposals: {
-    title: 'Propostas Comerciais / Orçamentos',
-    category: 'Vendas & Comercial',
+    title: 'Propostas no Bling',
+    category: 'Comercial Bling',
     endpoint: 'propostas-comerciais',
     demoKey: 'propostas',
     columns: ['Número', 'Cliente', 'Data Emissão', 'Validade', 'Valor Total', 'Situação', 'Ações'],
@@ -301,15 +392,15 @@ const MODULE_CONFIG = {
     filterTypeOptions: [{ val: 'Aprovada', label: 'Aprovada' }, { val: 'Em Negociação', label: 'Em Negociação' }],
     filterSituationOptions: [{ val: 'Aprovada', label: 'Aprovada' }, { val: 'Em Negociação', label: 'Em Negociação' }]
   },
-  nfe: {
-    title: 'Notas Fiscais (Entrada & Saída)',
-    category: 'Fiscal & Documentos',
-    endpoint: 'nfe',
-    demoKey: 'nfe',
-    columns: ['Número / Série', 'Tipo', 'Cliente / Fornecedor', 'Data Emissão', 'Valor Total', 'Chave de Acesso', 'Status SEFAZ', 'Ações'],
-    filterTypeLabel: 'Tipo de Operação',
-    filterTypeOptions: [{ val: 'E', label: 'Entrada (Fornecedores)' }, { val: 'S', label: 'Saída (Clientes)' }],
-    filterSituationOptions: [{ val: 'Autorizada', label: 'Autorizadas' }, { val: 'Cancelada', label: 'Canceladas' }, { val: 'Pendente', label: 'Pendentes' }]
+  sellers: {
+    title: 'Vendedores & Consultores Comerciais',
+    category: 'Comercial Bling',
+    endpoint: 'vendedores',
+    demoKey: 'pedidos',
+    columns: ['ID', 'Nome do Vendedor / Consultor', 'Comissão (%)', 'Situação', 'Ações'],
+    filterTypeLabel: 'Tipo',
+    filterTypeOptions: [{ val: 'interno', label: 'Vendedor Interno' }],
+    filterSituationOptions: [{ val: 'A', label: 'Ativos' }]
   },
   receivables: {
     title: 'Contas a Receber',
@@ -330,71 +421,6 @@ const MODULE_CONFIG = {
     filterTypeLabel: 'Categoria',
     filterTypeOptions: [{ val: 'Matéria-Prima', label: 'Matéria-Prima' }, { val: 'Equipamentos HVAC', label: 'Equipamentos HVAC' }],
     filterSituationOptions: [{ val: 'Aberta', label: 'Abertas' }, { val: 'Paga', label: 'Pagas' }]
-  },
-  serviceOrders: {
-    title: 'Ordens de Serviço (OS)',
-    category: 'Serviços & Operacional',
-    endpoint: 'ordens-servicos',
-    demoKey: 'ordensServicos',
-    columns: ['Número OS', 'Cliente', 'Descrição do Serviço', 'Responsável Técnico', 'Abertura', 'Previsão', 'Valor Total', 'Situação', 'Ações'],
-    filterTypeLabel: 'Responsável',
-    filterTypeOptions: [{ val: 'Equipe Alpha', label: 'Equipe Alpha' }, { val: 'Téc. Fernando', label: 'Téc. Fernando' }],
-    filterSituationOptions: [{ val: 'Em Execução', label: 'Em Execução' }, { val: 'Concluído', label: 'Concluído' }, { val: 'Aguardando Peças', label: 'Aguardando Peças' }]
-  },
-  stock: {
-    title: 'Saldos de Estoque',
-    category: 'Serviços & Operacional',
-    endpoint: 'estoques/saldos',
-    demoKey: 'produtos',
-    columns: ['Código', 'Descrição do Material', 'Depósito', 'Saldo Físico', 'Saldo Reservado', 'Saldo Disponível', 'Ações'],
-    filterTypeLabel: 'Depósito',
-    filterTypeOptions: [{ val: 'Geral', label: 'Depósito Central FLR' }],
-    filterSituationOptions: [{ val: 'A', label: 'Com Saldo' }]
-  },
-  categories: {
-    title: 'Categorias de Produtos & Serviços',
-    category: 'Cadastros',
-    endpoint: 'categorias/produtos',
-    demoKey: 'produtos',
-    columns: ['ID', 'Descrição da Categoria', 'Situação', 'Ações'],
-    filterTypeLabel: 'Tipo',
-    filterTypeOptions: [{ val: 'Geral', label: 'Geral' }],
-    filterSituationOptions: [{ val: 'A', label: 'Ativas' }]
-  },
-  sellers: {
-    title: 'Vendedores & Consultores Comerciais',
-    category: 'Vendas & Comercial',
-    endpoint: 'vendedores',
-    demoKey: 'pedidos',
-    columns: ['ID', 'Nome do Vendedor / Consultor', 'Comissão (%)', 'Situação', 'Ações'],
-    filterTypeLabel: 'Tipo',
-    filterTypeOptions: [{ val: 'interno', label: 'Vendedor Interno' }],
-    filterSituationOptions: [{ val: 'A', label: 'Ativos' }]
-  },
-  kits: {
-    title: 'Kits de Produtos',
-    category: 'Cadastros',
-    endpoint: 'kits',
-    demoKey: 'produtos',
-    columns: ['Código', 'Nome do Kit', 'Itens', 'Preço Total', 'Preço Fixo?', 'Ativo', 'Ações'],
-    filterTypeLabel: 'Status',
-    filterTypeOptions: [{ val: 'true', label: 'Ativos' }, { val: 'false', label: 'Inativos' }],
-    filterSituationOptions: []
-  },
-  quotes: {
-    title: 'Orçamentos',
-    category: 'Vendas & Comercial',
-    endpoint: 'orcamentos',
-    demoKey: 'pedidos',
-    columns: ['Número', 'Cliente', 'Título', 'Data', 'Validade', 'Total', 'Status', 'Bling?', 'Ações'],
-    filterTypeLabel: 'Status',
-    filterTypeOptions: [
-      { val: 'rascunho', label: 'Rascunho' },
-      { val: 'apresentado', label: 'Apresentado' },
-      { val: 'aprovado', label: 'Aprovado' },
-      { val: 'cancelado', label: 'Cancelado' }
-    ],
-    filterSituationOptions: []
   }
 };
 
@@ -734,6 +760,9 @@ window.applyUIPermissions = function() {
 window.switchERPView = async function(moduleKey) {
   state.currentModule = moduleKey;
 
+  // Garante que nenhum modal anterior permaneça aberto ao navegar entre menus
+  document.querySelectorAll('.modal-backdrop.active').forEach(m => m.classList.remove('active'));
+
   const unauthPane = document.getElementById('erpViewUnauthorized');
 
   // Verifica se o usuário tem permissão de visualização para este módulo
@@ -763,6 +792,7 @@ window.switchERPView = async function(moduleKey) {
   document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => item.classList.remove('active'));
   const activeNavMap = {
     dashboard: 'navDashboard',
+    projects: 'navProjects',
     clients: 'navClients',
     products: 'navProducts',
     services: 'navServices',
@@ -808,7 +838,11 @@ window.switchERPView = async function(moduleKey) {
       elements.btnOpenNewItemModal.style.display = 'none';
     } else {
       elements.btnOpenNewItemModal.style.display = 'inline-flex';
-      if (moduleKey === 'clients') {
+      if (moduleKey === 'projects') {
+        if (elements.lblNewItemBtn) elements.lblNewItemBtn.innerHTML = '<i class="fa-solid fa-helmet-safety"></i> Novo Projeto / Obra';
+        elements.btnOpenNewItemModal.onclick = () => openProjectModal();
+        elements.btnOpenNewItemModal.title = 'Cadastrar Novo Projeto / Obra';
+      } else if (moduleKey === 'clients') {
         if (elements.lblNewItemBtn) elements.lblNewItemBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Novo Cliente';
         elements.btnOpenNewItemModal.onclick = openNewClientModal;
         elements.btnOpenNewItemModal.title = 'Cadastrar Novo Cliente / Contato';
@@ -829,9 +863,9 @@ window.switchERPView = async function(moduleKey) {
         elements.btnOpenNewItemModal.onclick = openNewOrderModal;
         elements.btnOpenNewItemModal.title = 'Criar Nova Proposta / Orçamento';
       } else if (moduleKey === 'nfe') {
-        if (elements.lblNewItemBtn) elements.lblNewItemBtn.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Nova Nota / Importar XML';
-        elements.btnOpenNewItemModal.onclick = openNewNfeModal;
-        elements.btnOpenNewItemModal.title = 'Emitir ou Importar Nota Fiscal (XML ou Manual)';
+        if (elements.lblNewItemBtn) elements.lblNewItemBtn.innerHTML = '<i class="fa-solid fa-receipt"></i> Nova Entrada / Importar XML';
+        elements.btnOpenNewItemModal.onclick = () => openNfeEntryModal();
+        elements.btnOpenNewItemModal.title = 'Entrada de Nota Fiscal com De-Para';
       } else if (moduleKey === 'serviceOrders') {
         if (elements.lblNewItemBtn) elements.lblNewItemBtn.innerHTML = '<i class="fa-solid fa-helmet-safety"></i> Nova Ordem de Serviço';
         elements.btnOpenNewItemModal.onclick = openNewServiceOrderModal;
@@ -1177,8 +1211,16 @@ function generateRowHTML(mod, item) {
     const isPj = item.tipo === 'J';
     const situacaoClass = item.situacao === 'A' ? 'active' : 'inactive';
     const situacaoLabel = item.situacao === 'A' ? 'Ativo' : 'Inativo';
+  if (mod === 'clients') {
+    const isPj = item.tipo === 'J' || item.tipoPessoa === 'J';
+    const situacaoLabel = item.situacao === 'A' ? 'Ativo' : 'Inativo';
+    const situacaoClass = item.situacao === 'A' ? 'active' : 'inactive';
     const contato = item.celular || item.telefone || '--';
     const cidadeUf = item.endereco?.geral?.municipio ? `${item.endereco.geral.municipio}/${item.endereco.geral.uf || ''}` : '--';
+    const isBling = !(item.id && String(item.id).includes('-'));
+    const originBadge = isBling
+      ? '<span class="origin-tag origin-bling"><i class="fa-solid fa-cloud"></i> Bling</span>'
+      : '<span class="origin-tag origin-app"><i class="fa-solid fa-cube"></i> App FLR</span>';
 
     return `
       <tr onclick="openClientDetails(${item.id})">
@@ -1191,7 +1233,7 @@ function generateRowHTML(mod, item) {
         <td><span class="text-mono">${formatDocument(item.numeroDocumento)}</span></td>
         <td>${item.email ? `<span>${escapeHtml(item.email)}</span>` : '<span class="text-muted">--</span>'}</td>
         <td><span class="text-mono">${contato}</span></td>
-        <td>${cidadeUf}</td>
+        <td style="text-align:center;">${originBadge}</td>
         <td style="text-align: center;"><span class="badge-status ${situacaoClass}">● ${situacaoLabel}</span></td>
         <td style="text-align: right;" onclick="event.stopPropagation();">
           <button class="btn-view-action" onclick="openClientDetails(${item.id})"><i class="fa-solid fa-eye"></i> Ver</button>
@@ -1201,23 +1243,70 @@ function generateRowHTML(mod, item) {
     `;
   }
 
+  // Projetos & Obras (Verbas de Material)
+  if (mod === 'projects') {
+    const verbaOrcada = parseFloat(item.verba_material_orcada) || 0;
+    const verbaGasta = parseFloat(item.verba_material_gasta) || 0;
+    const saldoRestante = verbaOrcada - verbaGasta;
+    const pct = verbaOrcada > 0 ? Math.min(100, Math.round((verbaGasta / verbaOrcada) * 100)) : 0;
+    let progressColor = '#10B981';
+    if (pct >= 90) progressColor = '#EF4444';
+    else if (pct >= 70) progressColor = '#F59E0B';
+
+    const statusLabels = { planejamento: 'Planejamento', em_andamento: 'Em Andamento', pausado: 'Pausado', concluido: 'Concluído', cancelado: 'Cancelado' };
+    const statusClasses = { planejamento: 'pending', em_andamento: 'active', pausado: 'pending', concluido: 'active', cancelado: 'inactive' };
+
+    return `
+      <tr>
+        <td><span class="text-mono font-bold" style="color:var(--bling-blue);">${escapeHtml(item.codigo || '—')}</span></td>
+        <td>
+          <strong>${escapeHtml(item.nome || '—')}</strong>
+          ${item.responsavel_obra ? `<div style="font-size:11px;color:var(--text-muted);"><i class="fa-solid fa-helmet-safety"></i> ${escapeHtml(item.responsavel_obra)}</div>` : ''}
+        </td>
+        <td>${escapeHtml(item.cliente_nome || '—')}</td>
+        <td style="text-align:right;">${formatCurrency(item.verba_total_orcamento || 0)}</td>
+        <td style="text-align:right;"><strong class="text-blue">${formatCurrency(verbaOrcada)}</strong></td>
+        <td style="text-align:right;"><strong style="color:${progressColor};">${formatCurrency(verbaGasta)}</strong></td>
+        <td style="text-align:right;"><strong class="${saldoRestante >= 0 ? 'text-emerald' : 'text-red'}">${formatCurrency(saldoRestante)}</strong></td>
+        <td style="text-align:center;">
+          <span class="badge-status ${statusClasses[item.status] || 'pending'}">● ${statusLabels[item.status] || item.status}</span>
+        </td>
+        <td style="text-align:right;" onclick="event.stopPropagation();">
+          <button class="btn-view-action" onclick="openProjectExtract('${item.id}')" title="Ver Extrato de Materiais & Baixas">
+            <i class="fa-solid fa-list-check"></i> Extrato
+          </button>
+          <button class="btn-view-action" style="margin-left:4px;" onclick="openProjectModal(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
   if (mod === 'products' || mod === 'services') {
-    const sitClass = item.situacao === 'A' ? 'active' : 'inactive';
+    const sitClass = item.situacao === 'A' || item.ativo !== false ? 'active' : 'inactive';
     let estoqueDisplay = '--';
     if (typeof item.estoque === 'object' && item.estoque !== null) {
       estoqueDisplay = item.estoque.saldoFisicoTotal !== undefined ? item.estoque.saldoFisicoTotal : (item.estoque.saldoVirtualTotal !== undefined ? item.estoque.saldoVirtualTotal : '--');
     } else if (typeof item.estoque === 'number') {
       estoqueDisplay = item.estoque;
+    } else if (item.estoque_atual !== undefined) {
+      estoqueDisplay = item.estoque_atual;
     }
 
-    const precoVenda = typeof item.preco === 'object' ? (item.preco?.preco || 0) : (item.preco || 0);
-    const precoCusto = typeof item.precoCusto === 'object' ? (item.precoCusto?.preco || 0) : (item.precoCusto || 0);
-    const categoria = typeof item.categoria === 'object' ? (item.categoria?.descricao || 'Geral') : (item.categoria || 'Geral');
+    const precoVenda = typeof item.preco === 'object' ? (item.preco?.preco || 0) : (item.preco || item.preco_venda || 0);
+    const precoCusto = typeof item.precoCusto === 'object' ? (item.precoCusto?.preco || 0) : (item.precoCusto || item.preco_custo || 0);
+    const categoria = typeof item.categoria === 'object' ? (item.categoria?.descricao || 'Geral') : (item.categoria || item.categoria_nome || 'Geral');
+
+    const isBling = !!(item.bling_id || (item.id && !String(item.id).includes('-') && !String(item.id).startsWith('prod-')));
+    const originBadge = isBling 
+      ? '<span class="origin-tag origin-bling"><i class="fa-solid fa-cloud"></i> Bling</span>' 
+      : '<span class="origin-tag origin-app"><i class="fa-solid fa-cube"></i> App FLR</span>';
 
     const defaultImg = item.tipo === 'S' 
       ? 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=120&auto=format&fit=crop&q=80' 
       : 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=120&auto=format&fit=crop&q=80';
-    const imgUrl = item.imagemURL || item.midia?.imagens?.externas?.[0]?.link || item.anexos?.[0]?.url || item.imagens?.[0]?.link || defaultImg;
+    const imgUrl = item.imagemURL || item.imagem_url || item.midia?.imagens?.externas?.[0]?.link || item.anexos?.[0]?.url || item.imagens?.[0]?.link || defaultImg;
 
     return `
       <tr onclick="openClientDetails(${item.id})">
@@ -1232,8 +1321,8 @@ function generateRowHTML(mod, item) {
         <td style="text-align: right;"><span class="text-emerald font-bold">${formatCurrency(precoVenda)}</span></td>
         <td style="text-align: right;"><span class="text-muted">${formatCurrency(precoCusto)}</span></td>
         <td style="text-align: center;"><strong>${estoqueDisplay}</strong></td>
-        <td style="text-align: center;"><span class="text-mono">${item.unidade || 'UN'}</span></td>
-        <td style="text-align: center;"><span class="badge-status ${sitClass}">● ${item.situacao === 'A' ? 'Ativo' : 'Inativo'}</span></td>
+        <td style="text-align: center;">${originBadge}</td>
+        <td style="text-align: center;"><span class="badge-status ${sitClass}">● ${item.situacao === 'A' || item.ativo !== false ? 'Ativo' : 'Inativo'}</span></td>
         <td style="text-align: right;" onclick="event.stopPropagation();">
           <button class="btn-view-action" onclick="openClientDetails(${item.id})"><i class="fa-solid fa-eye"></i> Ver</button>
           ${canEdit ? `<button class="btn-view-action" style="color: var(--bling-blue); border-color: rgba(22, 101, 216, 0.25); margin-left: 4px;" onclick="openEditModal('products', ${item.id})"><i class="fa-solid fa-pen"></i> Editar</button>` : ''}
@@ -1305,56 +1394,40 @@ function generateRowHTML(mod, item) {
   }
 
   if (mod === 'nfe') {
-    const isEntrada = item.tipo === 0 || item.tipo === 'E' || item.tipoOperacao === 'E' || item.tipo === '0';
-    const tipoBadge = isEntrada 
-      ? '<span class="badge-tipo pj" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 600; font-size: 11px;"><i class="fa-solid fa-arrow-down"></i> Entrada</span>' 
-      : '<span class="badge-tipo pf" style="background: rgba(59, 130, 246, 0.15); color: #2563eb; font-weight: 600; font-size: 11px;"><i class="fa-solid fa-arrow-up"></i> Saída</span>';
-
-    const clientObj = item.contato || item.destinatario || item.cliente || item.emitente || {};
-    const clientName = typeof clientObj === 'object' ? (clientObj.nome || clientObj.razaoSocial || '--') : (item.cliente || item.fornecedor || '--');
-    const docNumber = typeof clientObj === 'object' ? (clientObj.numeroDocumento || clientObj.cnpj || clientObj.cpf || '') : '';
-
-    const numNfe = item.numero || item.numeroNota || item.id || '--';
+    const numNfe = item.numero_nota || item.numero || item.id || '--';
     const serieNfe = item.serie ? `/${item.serie}` : '';
-    const dataEmissao = item.dataEmissao || item.data || item.dataOperacao;
-    const valorTotal = item.valorNota || item.valorTotal || item.total || 0;
-    const chaveAcesso = item.chaveAcesso || item.chave || '--';
-
-    const sit = item.situacao || (typeof item.situacao === 'object' ? item.situacao.descricao : '') || 'Autorizada';
-    let sitClass = 'active';
-    if (String(sit).toLowerCase().includes('cancel')) sitClass = 'inactive';
-    else if (String(sit).toLowerCase().includes('pend') || String(sit).toLowerCase().includes('digit')) sitClass = 'pending';
-
-    const chaveCurta = (chaveAcesso && chaveAcesso !== '--') 
-      ? `${chaveAcesso.substring(0, 6)}...${chaveAcesso.substring(chaveAcesso.length - 6)}` 
-      : '--';
+    const fornecedorNome = item.fornecedor_nome || (typeof item.fornecedor === 'object' ? item.fornecedor?.nome : item.fornecedor) || item.cliente || '--';
+    const dataEmissao = item.data_emissao || item.dataEmissao || item.data;
+    const valorTotal = item.valor_total || item.valorNota || item.total || 0;
+    const destinoBadge = item.destino_estoque_padrao === 'projeto'
+      ? '<span class="origin-tag origin-app"><i class="fa-solid fa-helmet-safety"></i> Obra</span>'
+      : (item.destino_estoque_padrao === 'ambos'
+        ? '<span class="origin-tag origin-both"><i class="fa-solid fa-arrows-rotate"></i> Ambos</span>'
+        : '<span class="origin-tag origin-bling"><i class="fa-solid fa-warehouse"></i> Almoxarifado</span>');
+    const projetoNome = item.projeto?.nome || (item.projeto_id ? 'Vinculado' : '<span class="text-muted">—</span>');
+    const deParaStatus = (item.itens && item.itens.length > 0)
+      ? '<span style="color:#059669;font-size:11px;font-weight:700;"><i class="fa-solid fa-circle-check"></i> De-Para OK</span>'
+      : '<span style="color:var(--text-muted);font-size:11px;">Manual</span>';
 
     return `
-      <tr onclick="openClientDetails(${item.id})">
-        <td><span class="text-mono font-bold" style="font-size: 12px; color: var(--bling-blue);">NF-e #${numNfe}${serieNfe}</span></td>
-        <td style="text-align: center;">${tipoBadge}</td>
-        <td>
-          <div class="client-primary-name"><span>${escapeHtml(clientName)}</span></div>
-          ${docNumber ? `<div class="client-fantasy-name text-mono" style="font-size: 11px;">${formatDocument(docNumber)}</div>` : ''}
-        </td>
+      <tr>
+        <td><span class="text-mono font-bold" style="font-size: 12px; color: var(--bling-blue);">NF-e #${escapeHtml(numNfe)}${serieNfe}</span></td>
+        <td><strong>${escapeHtml(fornecedorNome)}</strong></td>
         <td><span class="text-mono">${formatDate(dataEmissao)}</span></td>
-        <td style="text-align: right;"><span class="text-emerald font-bold">${formatCurrency(valorTotal)}</span></td>
-        <td style="text-align: center;">
-          ${chaveAcesso !== '--' ? `
-            <span class="text-mono" style="font-size: 11px; cursor: pointer; color: var(--text-secondary);" title="${chaveAcesso} (Clique para copiar)" onclick="event.stopPropagation(); navigator.clipboard.writeText('${chaveAcesso}'); showNotification('Chave copiada!', 'info');">
-              ${chaveCurta} <i class="fa-regular fa-copy" style="font-size: 10px;"></i>
-            </span>
-          ` : '<span class="text-muted">--</span>'}
-        </td>
-        <td style="text-align: center;"><span class="badge-status ${sitClass}">● ${escapeHtml(sit)}</span></td>
-        <td style="text-align: right;" onclick="event.stopPropagation();">
-          <button class="btn-view-action" onclick="openClientDetails(${item.id})"><i class="fa-solid fa-eye"></i> Ver</button>
+        <td style="text-align:center;">${destinoBadge}</td>
+        <td><span style="font-size:12px;color:var(--text-secondary);">${escapeHtml(projetoNome)}</span></td>
+        <td style="text-align:right;"><strong class="text-emerald">${formatCurrency(valorTotal)}</strong></td>
+        <td style="text-align:center;">${deParaStatus}</td>
+        <td style="text-align:right;" onclick="event.stopPropagation();">
+          <button class="btn-view-action" onclick="openNfeDetails(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+            <i class="fa-solid fa-eye"></i> Detalhes
+          </button>
         </td>
       </tr>
     `;
   }
 
-  // Kits de Produtos
+  // Kits de Produtos (App FLR)
   if (mod === 'kits') {
     const totalItens = (item.itens || []).length;
     const totalCalc = (item.itens || []).reduce((s, it) => s + (it.quantity * it.unit_price), 0);
@@ -1384,7 +1457,7 @@ function generateRowHTML(mod, item) {
     `;
   }
 
-  // Orçamentos (Fast Quote Builder)
+  // Orçamentos (Fast Quote Builder - App FLR)
   if (mod === 'quotes') {
     const statusLabels = { rascunho: 'Rascunho', apresentado: 'Apresentado', aprovado: 'Aprovado', cancelado: 'Cancelado' };
     const statusColors = { rascunho: 'pending', apresentado: 'pending', aprovado: 'active', cancelado: 'inactive' };
@@ -1392,9 +1465,9 @@ function generateRowHTML(mod, item) {
     const statusLabel = statusLabels[item.status] || item.status;
     const dataValidade = item.data_validade ? formatDate(item.data_validade) : '—';
     const isBlingExported = !!(item.bling_pedido_id || item.bling_proposta_id);
-    const blingBadge = isBlingExported
-      ? `<span style="font-size:10px;background:#DBEAFE;color:#1E40AF;padding:2px 6px;border-radius:10px;font-weight:700;">✓ Bling</span>`
-      : `<span style="font-size:10px;color:var(--text-muted);">—</span>`;
+    const originBadge = isBlingExported
+      ? `<span class="origin-tag origin-bling"><i class="fa-solid fa-cloud-arrow-up"></i> Bling #${item.bling_pedido_id || item.bling_proposta_id}</span>`
+      : `<span class="origin-tag origin-app"><i class="fa-solid fa-cube"></i> App Local</span>`;
     return `
       <tr onclick="openQuoteBuilder(${JSON.stringify(item).replace(/"/g,'&quot;')})">
         <td><span class="text-mono font-bold" style="color:var(--bling-green-dark);">${escapeHtml(item.numero || '—')}</span></td>
@@ -1404,7 +1477,7 @@ function generateRowHTML(mod, item) {
         <td><span class="text-mono">${dataValidade}</span></td>
         <td style="text-align:right;"><strong class="text-emerald">${formatCurrency(item.total_final || 0)}</strong></td>
         <td style="text-align:center;"><span class="badge-status ${statusClass}">● ${statusLabel}</span></td>
-        <td style="text-align:center;">${blingBadge}</td>
+        <td style="text-align:center;">${originBadge}</td>
         <td style="text-align:right;" onclick="event.stopPropagation();">
           <button class="btn-view-action" onclick="openQuoteBuilder(${JSON.stringify(item).replace(/"/g,'&quot;')})">
             <i class="fa-solid fa-pen"></i> Editar
@@ -1665,6 +1738,12 @@ function setupEventListeners() {
   // SPA Seamless Navigation (Troca instantânea de módulo sem recarregar a página e sem flash)
   const navLinksMap = {
     'navDashboard': 'dashboard',
+    'navProjects': 'projects',
+    'navQuotes': 'quotes',
+    'navKits': 'kits',
+    'navServiceOrders': 'serviceOrders',
+    'navNfe': 'nfe',
+    'navStock': 'stock',
     'navClients': 'clients',
     'navProducts': 'products',
     'navServices': 'services',
@@ -1672,11 +1751,8 @@ function setupEventListeners() {
     'navOrders': 'orders',
     'navProposals': 'proposals',
     'navSellers': 'sellers',
-    'navNfe': 'nfe',
     'navReceivables': 'receivables',
-    'navPayables': 'payables',
-    'navServiceOrders': 'serviceOrders',
-    'navStock': 'stock'
+    'navPayables': 'payables'
   };
 
   Object.entries(navLinksMap).forEach(([navId, modKey]) => {
@@ -1697,6 +1773,12 @@ function setupEventListeners() {
   window.addEventListener('popstate', (e) => {
     const path = window.location.pathname.replace(/^\//, '') || 'index.html';
     const pageToMod = {
+      'projetos.html': 'projects',
+      'orcamentos.html': 'quotes',
+      'kits.html': 'kits',
+      'ordens-servico.html': 'serviceOrders',
+      'nfe.html': 'nfe',
+      'estoque.html': 'stock',
       'clientes.html': 'clients',
       'produtos.html': 'products',
       'servicos.html': 'services',
@@ -1704,11 +1786,8 @@ function setupEventListeners() {
       'pedidos.html': 'orders',
       'propostas.html': 'proposals',
       'vendedores.html': 'sellers',
-      'nfe.html': 'nfe',
       'contas-receber.html': 'receivables',
       'contas-pagar.html': 'payables',
-      'ordens-servico.html': 'serviceOrders',
-      'estoque.html': 'stock',
       'index.html': 'dashboard'
     };
     const mod = pageToMod[path] || (e.state && e.state.module) || 'dashboard';
@@ -1765,7 +1844,6 @@ function setupEventListeners() {
   elements.btnLogoutToken?.addEventListener('click', handleLogoutBling);
 
   // Novo Produto / Modal Listeners
-  elements.btnOpenNewItemModal?.addEventListener('click', openNewProductModal);
   elements.btnCloseNewProductModal?.addEventListener('click', () => closeModal(elements.modalNewProduct));
   elements.btnCloseNewProductModalFooter?.addEventListener('click', () => closeModal(elements.modalNewProduct));
   elements.formNewProduct?.addEventListener('submit', handleCreateProduct);
@@ -5349,6 +5427,580 @@ function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
+// ==========================================================================
+// MÓDULO: PROJETOS / OBRAS & VERBAS DE MATERIAL
+// ==========================================================================
+
+let activeExtractProjectId = null;
+
+async function openProjectModal(item = null) {
+  const modal = document.getElementById('modalProject');
+  if (!modal) return;
+
+  document.getElementById('projectId').value = item?.id || '';
+  document.getElementById('projectNome').value = item?.nome || '';
+  document.getElementById('projectCodigo').value = item?.codigo || '';
+  document.getElementById('projectStatus').value = item?.status || 'em_andamento';
+  document.getElementById('projectClienteNome').value = item?.cliente_nome || '';
+  document.getElementById('projectResponsavel').value = item?.responsavel_obra || '';
+  document.getElementById('projectVerbaTotal').value = item?.verba_total_orcamento || 0;
+  document.getElementById('projectVerbaMaterial').value = item?.verba_material_orcada || 0;
+  document.getElementById('projectObservacoes').value = item?.observacoes || '';
+
+  document.getElementById('projectModalTitle').textContent = item ? 'Editar Projeto / Obra' : 'Novo Projeto / Obra';
+  modal.classList.add('active');
+}
+
+async function handleSaveProject() {
+  const id = document.getElementById('projectId')?.value || null;
+  const nome = document.getElementById('projectNome')?.value?.trim();
+  if (!nome) return showToast('Preencha o nome do projeto/obra.', 'error');
+
+  const payload = {
+    nome,
+    codigo: document.getElementById('projectCodigo')?.value?.trim() || undefined,
+    status: document.getElementById('projectStatus')?.value || 'em_andamento',
+    cliente_nome: document.getElementById('projectClienteNome')?.value?.trim() || null,
+    responsavel_obra: document.getElementById('projectResponsavel')?.value?.trim() || null,
+    verba_total_orcamento: parseFloat(document.getElementById('projectVerbaTotal')?.value) || 0,
+    verba_material_orcada: parseFloat(document.getElementById('projectVerbaMaterial')?.value) || 0,
+    observacoes: document.getElementById('projectObservacoes')?.value?.trim() || null
+  };
+  if (id) payload.id = id;
+
+  try {
+    const res = await apiRequest('/api/projetos', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    document.getElementById('modalProject').classList.remove('active');
+    showToast('Projeto salvo com sucesso!', 'success');
+    if (state.currentModule === 'projects') await loadModuleData('projects');
+  } catch (err) {
+    showToast('Erro ao salvar projeto: ' + err.message, 'error');
+  }
+}
+
+async function openProjectExtract(projectId) {
+  activeExtractProjectId = projectId;
+  const modal = document.getElementById('modalProjectExtract');
+  if (!modal) return;
+
+  modal.classList.add('active');
+  const cardsContainer = document.getElementById('extractBudgetCards');
+  const nfeItemsBody = document.getElementById('extractNfeItemsBody');
+  const withdrawalsBody = document.getElementById('extractWithdrawalsBody');
+
+  if (cardsContainer) cardsContainer.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando extrato...</div>';
+  if (nfeItemsBody) nfeItemsBody.innerHTML = '';
+  if (withdrawalsBody) withdrawalsBody.innerHTML = '';
+
+  try {
+    const res = await apiRequest(`/api/projetos/${projectId}/extrato-material`);
+    const data = res?.data;
+    if (!data) throw new Error('Não foi possível carregar os dados.');
+
+    const { project, verbaOrcada, totalGastoMaterial, saldoVerbaRestante, percentualConsumido, itensComprados = [], movimentacoesRetiradas = [] } = data;
+    document.getElementById('extractProjectTitle').textContent = `Extrato: ${project.nome} (${project.codigo || '—'})`;
+
+    let colorStatus = '#10B981';
+    if (percentualConsumido >= 90) colorStatus = '#EF4444';
+    else if (percentualConsumido >= 70) colorStatus = '#F59E0B';
+
+    if (cardsContainer) {
+      cardsContainer.innerHTML = `
+        <div style="background:#F8FAFC;border:1px solid var(--border-color);border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Valor Contrato</div>
+          <div style="font-size:18px;font-weight:800;color:var(--text-primary);margin-top:4px;">${formatCurrency(project.verba_total_orcamento || 0)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Cobrado do Cliente</div>
+        </div>
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:#1D4ED8;font-weight:700;text-transform:uppercase;">Verba Material Orçada</div>
+          <div style="font-size:18px;font-weight:800;color:#1E40AF;margin-top:4px;">${formatCurrency(verbaOrcada)}</div>
+          <div style="font-size:11px;color:#3B82F6;margin-top:2px;">Teto Estipulado</div>
+        </div>
+        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:#B45309;font-weight:700;text-transform:uppercase;">Total Faturado em NF-e</div>
+          <div style="font-size:18px;font-weight:800;color:#D97706;margin-top:4px;">${formatCurrency(totalGastoMaterial)}</div>
+          <div style="font-size:11px;color:#D97706;margin-top:2px;">${Math.round(percentualConsumido)}% consumido</div>
+        </div>
+        <div style="background:${saldoVerbaRestante >= 0 ? '#ECFDF5' : '#FEF2F2'};border:1px solid ${saldoVerbaRestante >= 0 ? '#A7F3D0' : '#FECACA'};border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:${saldoVerbaRestante >= 0 ? '#047857' : '#B91C1C'};font-weight:700;text-transform:uppercase;">Saldo Restante Verba</div>
+          <div style="font-size:18px;font-weight:800;color:${saldoVerbaRestante >= 0 ? '#059669' : '#DC2626'};margin-top:4px;">${formatCurrency(saldoVerbaRestante)}</div>
+          <div style="font-size:11px;color:${saldoVerbaRestante >= 0 ? '#059669' : '#DC2626'};margin-top:2px;">${saldoVerbaRestante >= 0 ? '✓ Dentro da verba' : '⚠️ Verba estourada'}</div>
+        </div>
+      `;
+    }
+
+    if (nfeItemsBody) {
+      if (itensComprados.length === 0) {
+        nfeItemsBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Nenhuma nota fiscal ou item vinculado a esta obra até o momento.</td></tr>';
+      } else {
+        nfeItemsBody.innerHTML = itensComprados.map(it => `
+          <tr>
+            <td>
+              <strong>NF-e #${escapeHtml(it.entry?.numero_nota || '—')}</strong>
+              <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(it.entry?.fornecedor_nome || '—')}</div>
+            </td>
+            <td><span class="text-mono" style="font-size:11px;">${formatDate(it.entry?.data_emissao)}</span></td>
+            <td>
+              <strong>${escapeHtml(it.descricao_fornecedor || '—')}</strong>
+              ${it.codigo_fornecedor ? `<div style="font-size:10px;color:var(--text-muted);">Cód: ${escapeHtml(it.codigo_fornecedor)}</div>` : ''}
+            </td>
+            <td style="text-align:center;">${it.quantidade} ${it.unidade_fornecedor || 'UN'}</td>
+            <td style="text-align:right;">${formatCurrency(it.valor_unitario)}</td>
+            <td style="text-align:right;"><strong class="text-emerald">${formatCurrency(it.valor_total)}</strong></td>
+            <td style="text-align:center;">
+              <span class="origin-tag ${it.destino_estoque === 'ambos' ? 'origin-both' : (it.destino_estoque === 'projeto' ? 'origin-app' : 'origin-bling')}">
+                ${it.destino_estoque === 'ambos' ? 'Ambos' : (it.destino_estoque === 'projeto' ? 'Obra' : 'Almoxarifado')}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    if (withdrawalsBody) {
+      if (movimentacoesRetiradas.length === 0) {
+        withdrawalsBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Nenhuma retirada do almoxarifado registrada para esta obra.</td></tr>';
+      } else {
+        withdrawalsBody.innerHTML = movimentacoesRetiradas.map(m => `
+          <tr>
+            <td><span class="text-mono" style="font-size:11px;">${new Date(m.data_movimento).toLocaleString('pt-BR')}</span></td>
+            <td><strong>${escapeHtml(m.produto?.nome || 'Material')}</strong> <small class="text-muted">(${m.produto?.codigo || '—'})</small></td>
+            <td style="text-align:center;"><strong class="text-blue">${m.quantidade} ${m.produto?.unidade || 'UN'}</strong></td>
+            <td><span class="badge-tag-custom"><i class="fa-solid fa-hard-hat"></i> ${escapeHtml(m.responsavel_retirada || '—')}</span></td>
+            <td style="font-size:12px;color:var(--text-secondary);">${escapeHtml(m.observacoes || '—')}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+  } catch (err) {
+    showToast('Erro ao carregar extrato: ' + err.message, 'error');
+  }
+}
+
+async function openStockWithdrawalModal() {
+  const modal = document.getElementById('modalStockWithdrawal');
+  if (!modal) return;
+
+  document.getElementById('withdrawalProjectId').value = activeExtractProjectId || '';
+  document.getElementById('withdrawalQuantidade').value = '1';
+  document.getElementById('withdrawalResponsavel').value = '';
+  document.getElementById('withdrawalObservacoes').value = '';
+
+  // Popula produtos locais no select
+  const select = document.getElementById('withdrawalProdutoId');
+  if (select) {
+    select.innerHTML = '<option value="">Carregando produtos...</option>';
+    try {
+      const res = await apiRequest('/api/produtos-locais?limite=200');
+      const prods = res?.data || [];
+      select.innerHTML = '<option value="">Selecione o produto do almoxarifado...</option>' +
+        prods.map(p => `<option value="${p.id}">${escapeHtml(p.nome)} (${p.codigo || 'S/ Cód'}) — Saldo: ${p.estoque_atual || 0} ${p.unidade || 'UN'}</option>`).join('');
+    } catch {
+      select.innerHTML = '<option value="">Erro ao carregar produtos</option>';
+    }
+  }
+
+  modal.classList.add('active');
+}
+
+async function handleSaveWithdrawal() {
+  const produtoId = document.getElementById('withdrawalProdutoId')?.value;
+  const quantidade = parseFloat(document.getElementById('withdrawalQuantidade')?.value) || 0;
+  const responsavel = document.getElementById('withdrawalResponsavel')?.value?.trim();
+  const observacoes = document.getElementById('withdrawalObservacoes')?.value?.trim();
+  const projetoId = document.getElementById('withdrawalProjectId')?.value || null;
+
+  if (!produtoId) return showToast('Selecione o produto do almoxarifado.', 'error');
+  if (quantidade <= 0) return showToast('Informe uma quantidade válida.', 'error');
+  if (!responsavel) return showToast('Informe o responsável pela retirada.', 'error');
+
+  try {
+    await apiRequest('/api/estoque/movimentacoes', {
+      method: 'POST',
+      body: JSON.stringify({
+        produto_id: produtoId,
+        tipo: 'saida_producao',
+        quantidade,
+        destino: 'projeto',
+        projeto_id: projetoId,
+        responsavel_retirada: responsavel,
+        observacoes
+      })
+    });
+
+    document.getElementById('modalStockWithdrawal').classList.remove('active');
+    showToast('Retirada registrada e estoque atualizado com sucesso!', 'success');
+    if (activeExtractProjectId) await openProjectExtract(activeExtractProjectId);
+  } catch (err) {
+    showToast('Erro ao registrar retirada: ' + err.message, 'error');
+  }
+}
+
+// ==========================================================================
+// MÓDULO: ENTRADA DE NOTAS FISCAIS (NF-e) & DE-PARA
+// ==========================================================================
+
+let nfeEntryItems = [];
+let localProductsCache = [];
+let projectsListCache = [];
+
+async function openNfeEntryModal(item = null) {
+  const modal = document.getElementById('modalNfeEntry');
+  if (!modal) return;
+
+  document.getElementById('nfeEntryId').value = item?.id || '';
+  document.getElementById('nfeNumero').value = item?.numero_nota || '';
+  document.getElementById('nfeSerie').value = item?.serie || '1';
+  document.getElementById('nfeFornecedorNome').value = item?.fornecedor_nome || '';
+  document.getElementById('nfeFornecedorCnpj').value = item?.fornecedor_cnpj || '';
+  document.getElementById('nfeDataEmissao').value = item?.data_emissao || new Date().toISOString().split('T')[0];
+  document.getElementById('nfeValorTotal').value = item?.valor_total || 0;
+  document.getElementById('nfeDestinoPadrao').value = item?.destino_estoque_padrao || 'flr';
+  document.getElementById('nfeChaveAcesso').value = item?.chave_acesso || '';
+
+  // Carregar produtos e projetos em background para De-Para
+  try {
+    const [pRes, prjRes] = await Promise.all([
+      apiRequest('/api/produtos-locais?limite=300'),
+      apiRequest('/api/projetos')
+    ]);
+    localProductsCache = pRes?.data || [];
+    projectsListCache = prjRes?.data || [];
+
+    const projSelect = document.getElementById('nfeProjetoId');
+    if (projSelect) {
+      projSelect.innerHTML = '<option value="">Nenhum (Uso Geral)</option>' +
+        projectsListCache.map(p => `<option value="${p.id}" ${item?.projeto_id === p.id ? 'selected' : ''}>${escapeHtml(p.nome)} (${p.codigo || '—'})</option>`).join('');
+    }
+  } catch (e) {}
+
+  nfeEntryItems = item?.itens ? JSON.parse(JSON.stringify(item.itens)) : [];
+  renderNfeItemsTable();
+
+  document.getElementById('nfeEntryModalTitle').textContent = item ? 'Editar Entrada de NF-e' : 'Entrada de Nota Fiscal (NF-e com De-Para)';
+  modal.classList.add('active');
+}
+
+function renderNfeItemsTable() {
+  const tbody = document.getElementById('nfeItemsTableBody');
+  if (!tbody) return;
+
+  if (nfeEntryItems.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted);">
+          <i class="fa-solid fa-file-code" style="font-size:28px;margin-bottom:8px;display:block;color:var(--bling-blue);"></i>
+          Clique em <strong>"Importar Arquivo XML"</strong> para carregar os itens automaticamente ou adicione manualmente.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = nfeEntryItems.map((it, idx) => {
+    const prodOptions = localProductsCache.map(p => `
+      <option value="${p.id}" ${it.produto_id === p.id ? 'selected' : ''}>
+        ${escapeHtml(p.nome)} (${p.codigo || 'S/Cód'}) — R$ ${parseFloat(p.preco_venda||0).toFixed(2)}
+      </option>
+    `).join('');
+
+    return `
+      <tr>
+        <td style="text-align:center;font-size:11px;color:var(--text-muted);">${idx + 1}</td>
+        <td>
+          <input type="text" class="form-control form-control-sm text-mono" value="${escapeHtml(it.codigo_fornecedor || '')}"
+                 onchange="updateNfeItem(${idx}, 'codigo_fornecedor', this.value)" placeholder="Cód Forn">
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm" value="${escapeHtml(it.descricao_fornecedor || '')}"
+                 onchange="updateNfeItem(${idx}, 'descricao_fornecedor', this.value)" placeholder="Descrição na Nota" required>
+        </td>
+        <td>
+          <input type="number" class="form-control form-control-sm text-center" step="0.001" value="${it.quantidade || 1}"
+                 onchange="updateNfeItem(${idx}, 'quantidade', parseFloat(this.value)||1)">
+        </td>
+        <td>
+          <input type="number" class="form-control form-control-sm text-right" step="0.01" value="${it.valor_unitario || 0}"
+                 onchange="updateNfeItem(${idx}, 'valor_unitario', parseFloat(this.value)||0)">
+        </td>
+        <td style="text-align:right;font-weight:700;" class="text-emerald">
+          ${formatCurrency((parseFloat(it.quantidade)||1) * (parseFloat(it.valor_unitario)||0))}
+        </td>
+        <td>
+          <select class="form-control form-control-sm" onchange="updateNfeItem(${idx}, 'produto_id', this.value)" style="font-size:11px;">
+            <option value="">➕ Criar Novo Produto Localmente</option>
+            ${prodOptions}
+          </select>
+        </td>
+        <td>
+          <select class="form-control form-control-sm" onchange="updateNfeItem(${idx}, 'destino_estoque', this.value)" style="font-size:11px;">
+            <option value="flr" ${it.destino_estoque === 'flr' ? 'selected' : ''}>🏢 Almoxarifado</option>
+            <option value="projeto" ${it.destino_estoque === 'projeto' ? 'selected' : ''}>🏗️ Obra</option>
+            <option value="ambos" ${it.destino_estoque === 'ambos' ? 'selected' : ''}>🔄 Ambos</option>
+          </select>
+        </td>
+        <td style="text-align:center;">
+          <button type="button" onclick="removeNfeRow(${idx})" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;">&times;</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateNfeItem(idx, field, value) {
+  if (!nfeEntryItems[idx]) return;
+  nfeEntryItems[idx][field] = value;
+  if (field === 'quantidade' || field === 'valor_unitario') {
+    nfeEntryItems[idx].valor_total = (parseFloat(nfeEntryItems[idx].quantidade) || 1) * (parseFloat(nfeEntryItems[idx].valor_unitario) || 0);
+  }
+}
+
+function addNfeManualRow() {
+  const padraoDestino = document.getElementById('nfeDestinoPadrao')?.value || 'flr';
+  const padraoProjeto = document.getElementById('nfeProjetoId')?.value || null;
+  nfeEntryItems.push({
+    codigo_fornecedor: '',
+    descricao_fornecedor: '',
+    quantidade: 1,
+    unidade_fornecedor: 'UN',
+    valor_unitario: 0,
+    valor_total: 0,
+    produto_id: '',
+    destino_estoque: padraoDestino,
+    projeto_id: padraoProjeto
+  });
+  renderNfeItemsTable();
+}
+
+function removeNfeRow(idx) {
+  nfeEntryItems.splice(idx, 1);
+  renderNfeItemsTable();
+}
+
+function applyDestinoToAllItems(destino) {
+  nfeEntryItems.forEach(it => it.destino_estoque = destino);
+  renderNfeItemsTable();
+}
+
+function applyProjetoToAllItems(projetoId) {
+  nfeEntryItems.forEach(it => it.projeto_id = projetoId);
+}
+
+// Leitor Inteligente de XML de NF-e no Navegador
+async function handleNfeXmlUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(text, 'text/xml');
+
+    // Chave de Acesso
+    const infNFe = xmlDoc.querySelector('infNFe');
+    const chave = infNFe?.getAttribute('Id')?.replace(/\D/g, '') || '';
+    if (chave) document.getElementById('nfeChaveAcesso').value = chave;
+
+    // Cabeçalho da Nota
+    const ide = xmlDoc.querySelector('ide');
+    const nNF = ide?.querySelector('nNF')?.textContent || '';
+    const serie = ide?.querySelector('serie')?.textContent || '1';
+    const dhEmi = ide?.querySelector('dhEmi')?.textContent || ide?.querySelector('dEmi')?.textContent || '';
+
+    if (nNF) document.getElementById('nfeNumero').value = nNF;
+    if (serie) document.getElementById('nfeSerie').value = serie;
+    if (dhEmi) document.getElementById('nfeDataEmissao').value = dhEmi.split('T')[0];
+
+    // Emitente / Fornecedor
+    const emit = xmlDoc.querySelector('emit');
+    const xNome = emit?.querySelector('xNome')?.textContent || '';
+    const cnpj = emit?.querySelector('CNPJ')?.textContent || emit?.querySelector('CPF')?.textContent || '';
+
+    if (xNome) document.getElementById('nfeFornecedorNome').value = xNome;
+    if (cnpj) document.getElementById('nfeFornecedorCnpj').value = cnpj;
+
+    // Total da Nota
+    const vNF = xmlDoc.querySelector('total > ICMSTot > vNF')?.textContent || '0';
+    document.getElementById('nfeValorTotal').value = parseFloat(vNF) || 0;
+
+    // Itens da Nota
+    const dets = xmlDoc.querySelectorAll('det');
+    const padraoDestino = document.getElementById('nfeDestinoPadrao')?.value || 'flr';
+    const padraoProjeto = document.getElementById('nfeProjetoId')?.value || null;
+
+    nfeEntryItems = [];
+    for (let i = 0; i < dets.length; i++) {
+      const prod = dets[i].querySelector('prod');
+      const cProd = prod?.querySelector('cProd')?.textContent || '';
+      const xProd = prod?.querySelector('xProd')?.textContent || '';
+      const ncm = prod?.querySelector('NCM')?.textContent || '';
+      const cfop = prod?.querySelector('CFOP')?.textContent || '';
+      const uCom = prod?.querySelector('uCom')?.textContent || 'UN';
+      const qCom = parseFloat(prod?.querySelector('qCom')?.textContent) || 1;
+      const vUnCom = parseFloat(prod?.querySelector('vUnCom')?.textContent) || 0;
+      const vProd = parseFloat(prod?.querySelector('vProd')?.textContent) || (qCom * vUnCom);
+
+      // Consulta automática de De-Para no backend
+      let matchedProdutoId = '';
+      if (cnpj && cProd) {
+        try {
+          const lookup = await apiRequest('/api/nfe-entradas/de-para-lookup', {
+            method: 'POST',
+            body: JSON.stringify({ fornecedor_cnpj: cnpj, codigo_fornecedor: cProd })
+          });
+          if (lookup?.data?.produto_id) {
+            matchedProdutoId = lookup.data.produto_id;
+          }
+        } catch (e) {}
+      }
+
+      // Se não encontrou por regra, tenta match local por código SKU
+      if (!matchedProdutoId && cProd) {
+        const found = localProductsCache.find(p => (p.codigo || '').toLowerCase() === cProd.toLowerCase());
+        if (found) matchedProdutoId = found.id;
+      }
+
+      nfeEntryItems.push({
+        codigo_fornecedor: cProd,
+        descricao_fornecedor: xProd,
+        ncm,
+        cfop,
+        unidade_fornecedor: uCom,
+        quantidade: qCom,
+        valor_unitario: vUnCom,
+        valor_total: vProd,
+        produto_id: matchedProdutoId,
+        destino_estoque: padraoDestino,
+        projeto_id: padraoProjeto
+      });
+    }
+
+    renderNfeItemsTable();
+    showToast(`XML importado com sucesso! ${nfeEntryItems.length} itens extraídos.`, 'success');
+  } catch (err) {
+    showToast('Erro ao processar arquivo XML: ' + err.message, 'error');
+  }
+}
+
+async function handleSaveNfeEntry() {
+  const id = document.getElementById('nfeEntryId')?.value || null;
+  const numero_nota = document.getElementById('nfeNumero')?.value?.trim();
+  const fornecedor_nome = document.getElementById('nfeFornecedorNome')?.value?.trim();
+  if (!numero_nota || !fornecedor_nome) return showToast('Preencha o número da nota e o fornecedor.', 'error');
+
+  const entry = {
+    numero_nota,
+    serie: document.getElementById('nfeSerie')?.value?.trim() || '1',
+    fornecedor_nome,
+    fornecedor_cnpj: document.getElementById('nfeFornecedorCnpj')?.value?.trim() || null,
+    data_emissao: document.getElementById('nfeDataEmissao')?.value || new Date().toISOString().split('T')[0],
+    valor_total: parseFloat(document.getElementById('nfeValorTotal')?.value) || 0,
+    destino_estoque_padrao: document.getElementById('nfeDestinoPadrao')?.value || 'flr',
+    projeto_id: document.getElementById('nfeProjetoId')?.value || null,
+    chave_acesso: document.getElementById('nfeChaveAcesso')?.value?.trim() || null
+  };
+  if (id) entry.id = id;
+
+  const items = nfeEntryItems.map(it => ({
+    ...it,
+    criar_novo_produto: !it.produto_id // Flag para criar novo se não estiver mapeado
+  }));
+
+  try {
+    await apiRequest('/api/nfe-entradas', {
+      method: 'POST',
+      body: JSON.stringify({ entry, items })
+    });
+
+    document.getElementById('modalNfeEntry').classList.remove('active');
+    showToast('Entrada de NF-e salva e estoque atualizado com sucesso!', 'success');
+    if (state.currentModule === 'nfe') await loadModuleData('nfe');
+  } catch (err) {
+    showToast('Erro ao salvar entrada de NF-e: ' + err.message, 'error');
+  }
+}
+
+function openNfeDetails(item) {
+  const modal = document.getElementById('modalNfeDetails');
+  const body = document.getElementById('nfeDetailsBody');
+  if (!modal || !body) return;
+
+  document.getElementById('nfeDetailsTitle').textContent = `NF-e #${item.numero_nota || item.numero || '—'} · ${escapeHtml(item.fornecedor_nome || item.cliente || '—')}`;
+
+  const itens = item.itens || [];
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;background:#F8FAFC;padding:12px;border-radius:8px;">
+      <div><strong>Data de Emissão:</strong> ${formatDate(item.data_emissao || item.data)}</div>
+      <div><strong>Valor Total:</strong> <span class="text-emerald font-bold">${formatCurrency(item.valor_total || item.total || 0)}</span></div>
+      <div><strong>Destino Estoque:</strong> ${item.destino_estoque_padrao === 'projeto' ? '🏗️ Obra' : (item.destino_estoque_padrao === 'ambos' ? '🔄 Ambos' : '🏢 Almoxarifado')}</div>
+    </div>
+    ${item.chave_acesso ? `<div style="margin-bottom:16px;font-size:12px;color:var(--text-secondary);"><strong>Chave SEFAZ:</strong> <span class="text-mono">${escapeHtml(item.chave_acesso)}</span></div>` : ''}
+    <div class="order-section">
+      <div class="order-section-title">Itens Faturados e Amarração (De-Para)</div>
+      <table class="kit-items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cód. Forn.</th>
+            <th>Descrição na Nota</th>
+            <th style="width:60px;text-align:center;">Qtd</th>
+            <th style="width:100px;text-align:right;">Valor Unit.</th>
+            <th style="width:100px;text-align:right;">Total</th>
+            <th>Produto Interno Mapeado</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itens.map((it, idx) => `
+            <tr>
+              <td style="text-align:center;font-size:11px;color:var(--text-muted);">${idx + 1}</td>
+              <td><span class="text-mono" style="font-size:11px;">${escapeHtml(it.codigo_fornecedor || '—')}</span></td>
+              <td><strong>${escapeHtml(it.descricao_fornecedor || '—')}</strong></td>
+              <td style="text-align:center;">${it.quantidade} ${it.unidade_fornecedor || 'UN'}</td>
+              <td style="text-align:right;">${formatCurrency(it.valor_unitario)}</td>
+              <td style="text-align:right;"><strong class="text-emerald">${formatCurrency(it.valor_total)}</strong></td>
+              <td>
+                ${it.produto ? `<span class="origin-tag origin-app"><i class="fa-solid fa-cube"></i> ${escapeHtml(it.produto.nome)} (${it.produto.codigo || '—'})</span>` : '<span class="text-muted">Item Avulso</span>'}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  modal.classList.add('active');
+}
+
+// Fechamento de Modais
+document.getElementById('btnCloseProjectModal')?.addEventListener('click', () => document.getElementById('modalProject').classList.remove('active'));
+document.getElementById('btnCancelProjectModal')?.addEventListener('click', () => document.getElementById('modalProject').classList.remove('active'));
+document.getElementById('btnCloseExtractModal')?.addEventListener('click', () => document.getElementById('modalProjectExtract').classList.remove('active'));
+document.getElementById('btnCloseWithdrawalModal')?.addEventListener('click', () => document.getElementById('modalStockWithdrawal').classList.remove('active'));
+document.getElementById('btnCancelWithdrawalModal')?.addEventListener('click', () => document.getElementById('modalStockWithdrawal').classList.remove('active'));
+document.getElementById('btnCloseNfeEntryModal')?.addEventListener('click', () => document.getElementById('modalNfeEntry').classList.remove('active'));
+document.getElementById('btnCancelNfeModal')?.addEventListener('click', () => document.getElementById('modalNfeEntry').classList.remove('active'));
+document.getElementById('btnCloseNfeDetails')?.addEventListener('click', () => document.getElementById('modalNfeDetails').classList.remove('active'));
+
+// Expor funções globais
+window.openProjectModal = openProjectModal;
+window.handleSaveProject = handleSaveProject;
+window.openProjectExtract = openProjectExtract;
+window.openStockWithdrawalModal = openStockWithdrawalModal;
+window.handleSaveWithdrawal = handleSaveWithdrawal;
+window.openNfeEntryModal = openNfeEntryModal;
+window.handleNfeXmlUpload = handleNfeXmlUpload;
+window.addNfeManualRow = addNfeManualRow;
+window.removeNfeRow = removeNfeRow;
+window.updateNfeItem = updateNfeItem;
+window.applyDestinoToAllItems = applyDestinoToAllItems;
+window.applyProjetoToAllItems = applyProjetoToAllItems;
+window.handleSaveNfeEntry = handleSaveNfeEntry;
+window.openNfeDetails = openNfeDetails;
 
 // Expor funções globais para kits e orçamentos
 window.openKitBuilder = openKitBuilder;

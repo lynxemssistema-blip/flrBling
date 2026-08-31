@@ -33,16 +33,38 @@ const {
   saveProductComplement,
   getAllProductComplements,
   logActivity,
+  // Kits
   getAllKits,
   getKitById,
   saveKit,
   deleteKit,
+  // Orçamentos
   getAllQuotes,
   getQuoteById,
   saveQuote,
   updateQuote,
   updateQuoteBlingSync,
-  generateQuoteNumber
+  generateQuoteNumber,
+  // Produtos Locais
+  getAllProducts,
+  getProductById,
+  findProductByCode,
+  findProductByBlingId,
+  saveProduct,
+  // Projetos & Verbas
+  getAllProjects,
+  getProjectById,
+  saveProject,
+  getProjectMaterialExtract,
+  // NF-e Entradas & De-Para
+  findDeParaRule,
+  saveDeParaRule,
+  getAllNfeEntries,
+  getNfeEntryById,
+  saveNfeEntryWithItems,
+  // Movimentações de Estoque
+  registerStockMovement,
+  getStockMovements
 } = require('./supabaseClient');
 
 const app = express();
@@ -1653,6 +1675,198 @@ app.post('/api/orcamentos/:id/exportar-bling', authenticateToken, async (req, re
       error: 'Erro ao exportar orçamento para o Bling',
       details: err.response?.data || err.message
     });
+  }
+});
+
+// ==========================================================================
+// 6. PROJETOS / OBRAS & CONTROLE DE VERBAS (Supabase)
+// ==========================================================================
+
+// Listar Projetos
+app.get('/api/projetos', authenticateToken, async (req, res) => {
+  try {
+    const { status } = req.query;
+    const projects = await getAllProjects({ status });
+    res.json({ data: projects });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar projetos: ' + err.message });
+  }
+});
+
+// Detalhe de um Projeto
+app.get('/api/projetos/:id', authenticateToken, async (req, res) => {
+  try {
+    const project = await getProjectById(req.params.id);
+    if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    res.json({ data: project });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar projeto: ' + err.message });
+  }
+});
+
+// Salvar / Criar Projeto
+app.post('/api/projetos', authenticateToken, async (req, res) => {
+  try {
+    const project = await saveProject(req.body, req.user?.id);
+    await logActivity('project_saved', null, `Projeto salvo: ${project.nome}`, { project }, req.user?.id);
+    res.status(201).json({ success: true, data: project });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao salvar projeto: ' + err.message });
+  }
+});
+
+// Extrato de Materiais e Verba por Projeto
+app.get('/api/projetos/:id/extrato-material', authenticateToken, async (req, res) => {
+  try {
+    const extract = await getProjectMaterialExtract(req.params.id);
+    res.json({ data: extract });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao gerar extrato do projeto: ' + err.message });
+  }
+});
+
+// ==========================================================================
+// 7. PRODUTOS & MATERIAIS LOCAIS (Com Sincronização Opcional ao Bling)
+// ==========================================================================
+
+// Listar Produtos Locais
+app.get('/api/produtos-locais', authenticateToken, async (req, res) => {
+  try {
+    const { pesquisa, onlyLocal, onlyBling, limite = 100 } = req.query;
+    const products = await getAllProducts({
+      search: pesquisa,
+      onlyLocal: onlyLocal === 'true',
+      onlyBling: onlyBling === 'true',
+      limit: parseInt(limite, 10)
+    });
+    res.json({ data: products });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar produtos locais: ' + err.message });
+  }
+});
+
+// Salvar Produto Local (default: sincronizado_bling = false)
+app.post('/api/produtos-locais', authenticateToken, async (req, res) => {
+  try {
+    const product = await saveProduct(req.body, req.user?.id);
+    res.status(201).json({ success: true, data: product });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao salvar produto local: ' + err.message });
+  }
+});
+
+// Enviar Produto Pontual para o Bling sob demanda
+app.post('/api/produtos-locais/:id/sincronizar-bling', authenticateToken, async (req, res) => {
+  try {
+    const prod = await getProductById(req.params.id);
+    if (!prod) return res.status(404).json({ error: 'Produto não encontrado.' });
+
+    const tokens = await getTokens();
+    if (!tokens || !tokens.access_token) {
+      return res.status(401).json({ error: 'Bling OAuth não conectado.' });
+    }
+
+    const payload = {
+      nome: prod.nome,
+      codigo: prod.codigo || undefined,
+      preco: parseFloat(prod.preco_venda) || 0,
+      tipo: prod.tipo || 'P',
+      unidade: prod.unidade || 'UN',
+      formato: 'S'
+    };
+
+    const blingRes = await axios.post('https://bling.com.br/Api/v3/produtos', payload, {
+      headers: { 'Authorization': `Bearer ${tokens.access_token}`, 'Content-Type': 'application/json' }
+    });
+
+    const blingId = blingRes.data?.data?.id;
+    if (blingId) {
+      await saveProduct({ id: prod.id, bling_id: blingId, sincronizado_bling: true, sincronizado_em: new Date().toISOString() });
+    }
+
+    res.json({ success: true, message: 'Produto sincronizado no Bling com sucesso!', bling_id: blingId });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao sincronizar produto no Bling: ' + (err.response?.data?.error?.message || err.message) });
+  }
+});
+
+// ==========================================================================
+// 8. ENTRADA DE NOTAS FISCAIS (NF-e) & DE-PARA INTELIGENTE
+// ==========================================================================
+
+// Listar Entradas de NF-e
+app.get('/api/nfe-entradas', authenticateToken, async (req, res) => {
+  try {
+    const { status, projetoId, limite = 100 } = req.query;
+    const entries = await getAllNfeEntries({ status, projetoId, limit: parseInt(limite, 10) });
+    res.json({ data: entries });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar notas fiscais: ' + err.message });
+  }
+});
+
+// Detalhe de uma NF-e com itens
+app.get('/api/nfe-entradas/:id', authenticateToken, async (req, res) => {
+  try {
+    const entry = await getNfeEntryById(req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Nota fiscal não encontrada.' });
+    res.json({ data: entry });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar nota fiscal: ' + err.message });
+  }
+});
+
+// Consulta Regra de De-Para (Sugere produto baseado no CNPJ e Código do Fornecedor)
+app.post('/api/nfe-entradas/de-para-lookup', authenticateToken, async (req, res) => {
+  try {
+    const { fornecedor_cnpj, codigo_fornecedor } = req.body;
+    const rule = await findDeParaRule(fornecedor_cnpj, codigo_fornecedor);
+    res.json({ data: rule });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao consultar De-Para: ' + err.message });
+  }
+});
+
+// Salvar Entrada de NF-e completa (Cabeçalho + Itens + De-Para + Movimentações)
+app.post('/api/nfe-entradas', authenticateToken, async (req, res) => {
+  try {
+    const { entry, items = [] } = req.body;
+    if (!entry || !entry.numero_nota || !entry.fornecedor_nome) {
+      return res.status(400).json({ error: 'Dados da nota fiscal incompletos.' });
+    }
+
+    const saved = await saveNfeEntryWithItems(entry, items, req.user?.id);
+    await logActivity('nfe_entry_saved', null, `Entrada NF-e #${entry.numero_nota} salva (${entry.fornecedor_nome})`, { entry }, req.user?.id);
+
+    res.status(201).json({ success: true, data: saved });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao salvar entrada de NF-e: ' + err.message });
+  }
+});
+
+// ==========================================================================
+// 9. MOVIMENTAÇÕES DE ESTOQUE & RETIRADAS PARA OBRA
+// ==========================================================================
+
+// Listar Movimentações
+app.get('/api/estoque/movimentacoes', authenticateToken, async (req, res) => {
+  try {
+    const { produtoId, projetoId, destino, limite = 100 } = req.query;
+    const movs = await getStockMovements({ produtoId, projetoId, destino, limit: parseInt(limite, 10) });
+    res.json({ data: movs });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar movimentações: ' + err.message });
+  }
+});
+
+// Registrar Retirada de Almoxarifado para Obra
+app.post('/api/estoque/movimentacoes', authenticateToken, async (req, res) => {
+  try {
+    const mov = await registerStockMovement(req.body, req.user?.id);
+    await logActivity('stock_movement', null, `Movimento de estoque registrado: ${mov.tipo}`, { mov }, req.user?.id);
+    res.status(201).json({ success: true, data: mov });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao registrar movimento: ' + err.message });
   }
 });
 

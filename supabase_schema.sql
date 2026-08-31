@@ -378,3 +378,184 @@ CREATE POLICY "Permitir acesso total flrBling_kit_items" ON "flrBling_kit_items"
 DROP POLICY IF EXISTS "Permitir acesso total flrBling_quotes" ON "flrBling_quotes";
 CREATE POLICY "Permitir acesso total flrBling_quotes" ON "flrBling_quotes" FOR ALL USING (true);
 
+-- ==========================================================================
+-- MÓDULO: CATÁLOGO LOCAL DE PRODUTOS & MATERIAIS
+-- ==========================================================================
+
+-- 10. Tabela de Produtos Locais (com vínculo opcional ao Bling)
+CREATE TABLE IF NOT EXISTS "flrBling_products" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bling_id BIGINT UNIQUE,                     -- ID retornado pelo Bling quando sincronizado
+    codigo TEXT,                                 -- SKU / Código interno ou do Bling
+    nome TEXT NOT NULL,                          -- Descrição do produto / material
+    tipo TEXT DEFAULT 'P',                       -- P = Produto, S = Serviço, M = Matéria-prima
+    unidade TEXT DEFAULT 'UN',                   -- UN, MT, KG, PC, etc.
+    preco_custo NUMERIC(15,2) DEFAULT 0,
+    preco_venda NUMERIC(15,2) DEFAULT 0,
+    estoque_atual NUMERIC(15,3) DEFAULT 0,       -- Saldo Físico Almoxarifado FLR
+    estoque_minimo NUMERIC(15,3) DEFAULT 0,
+    ncm TEXT,                                    -- Nomenclatura Comum do Mercosul
+    gtin_ean TEXT,                               -- Código de Barras EAN/GTIN
+    categoria_id UUID,
+    categoria_nome TEXT,
+    imagem_url TEXT,
+    sincronizado_bling BOOLEAN DEFAULT false,    -- Default FALSE conforme regra do usuário
+    sincronizado_em TIMESTAMPTZ,
+    ativo BOOLEAN DEFAULT true,
+    created_by UUID REFERENCES "flrBling_users"(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==========================================================================
+-- MÓDULO: PROJETOS / OBRAS / CENTROS DE CUSTO COM VERBA
+-- ==========================================================================
+
+-- 11. Tabela de Projetos e Obras (Centros de Custo)
+CREATE TABLE IF NOT EXISTS "flrBling_projects" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    codigo TEXT UNIQUE,                          -- ex: PRJ-2026-001
+    nome TEXT NOT NULL,                          -- ex: "Instalação VRF - Shopping Horizon"
+    cliente_id BIGINT,                           -- ID do cliente no Bling/App
+    cliente_nome TEXT,                           -- Nome / Razão Social do Cliente
+    quote_id UUID REFERENCES "flrBling_quotes"(id) ON DELETE SET NULL, -- Orçamento de Origem
+    verba_total_orcamento NUMERIC(15,2) DEFAULT 0, -- Valor total do contrato (ex: R$ 1.000,00)
+    verba_material_orcada NUMERIC(15,2) DEFAULT 0, -- Verba estipulada para compras (ex: R$ 400,00)
+    verba_material_gasta NUMERIC(15,2) DEFAULT 0,  -- Apurado pela soma dos itens vinculados de NF-e
+    data_inicio DATE DEFAULT CURRENT_DATE,
+    data_previsao DATE,
+    data_conclusao DATE,
+    status TEXT DEFAULT 'em_andamento',          -- planejamento | em_andamento | pausado | concluido | cancelado
+    responsavel_obra TEXT,                       -- Engenheiro / Técnico encarregado
+    observacoes TEXT,
+    created_by UUID REFERENCES "flrBling_users"(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ==========================================================================
+-- MÓDULO: ENTRADA DE NOTAS FISCAIS (NF-e) & DE-PARA
+-- ==========================================================================
+
+-- 12. Tabela de Entradas de NF-e (Cabeçalho da Nota)
+CREATE TABLE IF NOT EXISTS "flrBling_nfe_entries" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    numero_nota TEXT NOT NULL,                   -- Número da Nota Fiscal (ex: 12450)
+    serie TEXT DEFAULT '1',
+    chave_acesso TEXT UNIQUE,                    -- 44 dígitos da chave SEFAZ
+    tipo_operacao TEXT DEFAULT '0',              -- 0 = Entrada (Compra), 1 = Saída
+    fornecedor_nome TEXT NOT NULL,
+    fornecedor_cnpj TEXT,
+    fornecedor_uf TEXT,
+    data_emissao DATE NOT NULL,
+    data_entrada DATE DEFAULT CURRENT_DATE,
+    valor_produtos NUMERIC(15,2) DEFAULT 0,
+    valor_frete NUMERIC(15,2) DEFAULT 0,
+    valor_desconto NUMERIC(15,2) DEFAULT 0,
+    valor_total NUMERIC(15,2) NOT NULL,          -- Valor Total da Nota
+    projeto_id UUID REFERENCES "flrBling_projects"(id) ON DELETE SET NULL, -- Vínculo opcional
+    destino_estoque_padrao TEXT DEFAULT 'flr',   -- 'flr' (Almoxarifado) | 'projeto' (Obra) | 'ambos'
+    xml_raw TEXT,                                -- Conteúdo original do XML importado
+    status TEXT DEFAULT 'concluido',             -- rascunho | concluido | cancelado
+    observacoes TEXT,
+    created_by UUID REFERENCES "flrBling_users"(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 13. Tabela de Itens da NF-e com Amarração (De-Para)
+CREATE TABLE IF NOT EXISTS "flrBling_nfe_items" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nfe_entry_id UUID NOT NULL REFERENCES "flrBling_nfe_entries"(id) ON DELETE CASCADE,
+    numero_item INTEGER DEFAULT 1,
+    codigo_fornecedor TEXT,                      -- Código original do produto no fornecedor
+    descricao_fornecedor TEXT NOT NULL,          -- Descrição original da nota
+    ncm TEXT,
+    cfop TEXT,
+    unidade_fornecedor TEXT DEFAULT 'UN',
+    quantidade NUMERIC(15,3) NOT NULL DEFAULT 1,
+    valor_unitario NUMERIC(15,4) NOT NULL DEFAULT 0,
+    valor_total NUMERIC(15,2) NOT NULL DEFAULT 0,
+    -- De-Para: Produto Interno Mapeado no App/Bling
+    produto_id UUID REFERENCES "flrBling_products"(id) ON DELETE SET NULL,
+    bling_product_id BIGINT,
+    destino_estoque TEXT DEFAULT 'flr',          -- 'flr' | 'projeto' | 'ambos'
+    projeto_id UUID REFERENCES "flrBling_projects"(id) ON DELETE SET NULL, -- Projeto específico do item
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 14. Regras Memorizadas de De-Para (Para automação nas próximas compras)
+CREATE TABLE IF NOT EXISTS "flrBling_de_para_rules" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    fornecedor_cnpj TEXT NOT NULL,
+    codigo_fornecedor TEXT NOT NULL,
+    produto_id UUID NOT NULL REFERENCES "flrBling_products"(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT "uq_depara_fornecedor_item" UNIQUE (fornecedor_cnpj, codigo_fornecedor)
+);
+
+-- ==========================================================================
+-- MÓDULO: CONTROLE & RASTREABILIDADE DE ESTOQUE (FLR vs OBRAS)
+-- ==========================================================================
+
+-- 15. Movimentações de Estoque & Retiradas para Produção
+CREATE TABLE IF NOT EXISTS "flrBling_stock_movements" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    produto_id UUID NOT NULL REFERENCES "flrBling_products"(id) ON DELETE RESTRICT,
+    tipo TEXT NOT NULL,                          -- 'entrada_nfe' | 'saida_producao' | 'devolucao' | 'ajuste'
+    quantidade NUMERIC(15,3) NOT NULL,
+    destino TEXT NOT NULL DEFAULT 'flr',         -- 'flr' (Almoxarifado) | 'projeto' (Obra) | 'ambos'
+    projeto_id UUID REFERENCES "flrBling_projects"(id) ON DELETE SET NULL,
+    nfe_entry_id UUID REFERENCES "flrBling_nfe_entries"(id) ON DELETE SET NULL,
+    nfe_item_id UUID REFERENCES "flrBling_nfe_items"(id) ON DELETE SET NULL,
+    responsavel_retirada TEXT,                   -- Quem retirou o material do almoxarifado
+    data_movimento TIMESTAMPTZ DEFAULT NOW(),
+    observacoes TEXT,
+    created_by UUID REFERENCES "flrBling_users"(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Índices de Alta Performance
+CREATE INDEX IF NOT EXISTS "idx_flrBling_products_codigo" ON "flrBling_products" (codigo);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_products_bling_id" ON "flrBling_products" (bling_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_products_sinc" ON "flrBling_products" (sincronizado_bling);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_projects_status" ON "flrBling_projects" (status);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_projects_cliente" ON "flrBling_projects" (cliente_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_nfe_entries_chave" ON "flrBling_nfe_entries" (chave_acesso);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_nfe_entries_projeto" ON "flrBling_nfe_entries" (projeto_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_nfe_items_entry" ON "flrBling_nfe_items" (nfe_entry_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_nfe_items_prod" ON "flrBling_nfe_items" (produto_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_nfe_items_proj" ON "flrBling_nfe_items" (projeto_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_depara_forn" ON "flrBling_de_para_rules" (fornecedor_cnpj, codigo_fornecedor);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_stock_prod" ON "flrBling_stock_movements" (produto_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_stock_proj" ON "flrBling_stock_movements" (projeto_id);
+CREATE INDEX IF NOT EXISTS "idx_flrBling_stock_tipo" ON "flrBling_stock_movements" (tipo);
+
+-- Habilitar Row Level Security (RLS)
+ALTER TABLE "flrBling_products" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "flrBling_projects" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "flrBling_nfe_entries" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "flrBling_nfe_items" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "flrBling_de_para_rules" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "flrBling_stock_movements" ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de Acesso Total para a Aplicação
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_products" ON "flrBling_products";
+CREATE POLICY "Permitir acesso total flrBling_products" ON "flrBling_products" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_projects" ON "flrBling_projects";
+CREATE POLICY "Permitir acesso total flrBling_projects" ON "flrBling_projects" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_nfe_entries" ON "flrBling_nfe_entries";
+CREATE POLICY "Permitir acesso total flrBling_nfe_entries" ON "flrBling_nfe_entries" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_nfe_items" ON "flrBling_nfe_items";
+CREATE POLICY "Permitir acesso total flrBling_nfe_items" ON "flrBling_nfe_items" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_de_para_rules" ON "flrBling_de_para_rules";
+CREATE POLICY "Permitir acesso total flrBling_de_para_rules" ON "flrBling_de_para_rules" FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Permitir acesso total flrBling_stock_movements" ON "flrBling_stock_movements";
+CREATE POLICY "Permitir acesso total flrBling_stock_movements" ON "flrBling_stock_movements" FOR ALL USING (true);
+

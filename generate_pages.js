@@ -7,6 +7,60 @@ const indexContent = fs.readFileSync(indexHtmlPath, 'utf8');
 
 const pages = [
   {
+    fileName: 'projetos.html',
+    dataPage: 'projects',
+    navId: 'navProjects',
+    title: 'Projetos & Obras (Verbas de Material) | Bling ERP FLR',
+    category: 'Operação FLR',
+    viewName: 'Projetos & Obras',
+    btnLabel: 'Novo Projeto / Obra'
+  },
+  {
+    fileName: 'orcamentos.html',
+    dataPage: 'quotes',
+    navId: 'navQuotes',
+    title: 'Construtor de Orçamentos | Bling ERP FLR',
+    category: 'Operação FLR',
+    viewName: 'Construtor de Orçamentos',
+    btnLabel: 'Novo Orçamento'
+  },
+  {
+    fileName: 'kits.html',
+    dataPage: 'kits',
+    navId: 'navKits',
+    title: 'Kits de Produtos | Bling ERP FLR',
+    category: 'Operação FLR',
+    viewName: 'Kits de Produtos',
+    btnLabel: 'Novo Kit'
+  },
+  {
+    fileName: 'ordens-servico.html',
+    dataPage: 'serviceOrders',
+    navId: 'navServiceOrders',
+    title: 'Ordens de Serviço (OS) | Bling ERP FLR',
+    category: 'Operação FLR',
+    viewName: 'Ordens de Serviço (OS)',
+    btnLabel: 'Nova Ordem de Serviço'
+  },
+  {
+    fileName: 'nfe.html',
+    dataPage: 'nfe',
+    navId: 'navNfe',
+    title: 'Entrada de Notas Fiscais (NF-e) | Bling ERP FLR',
+    category: 'Compras & Estoque',
+    viewName: 'Entrada NF-e (De-Para)',
+    btnLabel: 'Nova Entrada / Importar XML'
+  },
+  {
+    fileName: 'estoque.html',
+    dataPage: 'stock',
+    navId: 'navStock',
+    title: 'Almoxarifado & Saldos de Estoque | Bling ERP FLR',
+    category: 'Compras & Estoque',
+    viewName: 'Almoxarifado & Saldos',
+    btnLabel: 'Acerto / Retirada'
+  },
+  {
     fileName: 'clientes.html',
     dataPage: 'clients',
     navId: 'navClients',
@@ -47,7 +101,7 @@ const pages = [
     dataPage: 'orders',
     navId: 'navOrders',
     title: 'Pedidos de Venda | Bling ERP FLR',
-    category: 'Vendas & Comercial',
+    category: 'Comercial Bling',
     viewName: 'Pedidos de Venda',
     btnLabel: 'Novo Pedido'
   },
@@ -55,8 +109,8 @@ const pages = [
     fileName: 'propostas.html',
     dataPage: 'proposals',
     navId: 'navProposals',
-    title: 'Propostas Comerciais / Orçamentos | Bling ERP FLR',
-    category: 'Vendas & Comercial',
+    title: 'Propostas no Bling | Bling ERP FLR',
+    category: 'Comercial Bling',
     viewName: 'Propostas Comerciais',
     btnLabel: 'Nova Proposta'
   },
@@ -65,27 +119,9 @@ const pages = [
     dataPage: 'sellers',
     navId: 'navSellers',
     title: 'Vendedores & Consultores Comerciais | Bling ERP FLR',
-    category: 'Vendas & Comercial',
+    category: 'Comercial Bling',
     viewName: 'Vendedores & Comissões',
     btnLabel: 'Novo Vendedor'
-  },
-  {
-    fileName: 'nfe.html',
-    dataPage: 'nfe',
-    navId: 'navNfe',
-    title: 'Notas Fiscais (NF-e Entrada & Saída) | Bling ERP FLR',
-    category: 'Fiscal & Documentos',
-    viewName: 'Notas Fiscais (NF-e)',
-    btnLabel: 'Nova Nota / Importar XML'
-  },
-  {
-    fileName: 'ordens-servico.html',
-    dataPage: 'serviceOrders',
-    navId: 'navServiceOrders',
-    title: 'Ordens de Serviço (OS) | Bling ERP FLR',
-    category: 'Serviços & Operacional',
-    viewName: 'Ordens de Serviço (OS)',
-    btnLabel: 'Nova Ordem de Serviço'
   },
   {
     fileName: 'contas-receber.html',
@@ -104,33 +140,6 @@ const pages = [
     category: 'Financeiro',
     viewName: 'Contas a Pagar',
     btnLabel: 'Nova Conta a Pagar'
-  },
-  {
-    fileName: 'estoque.html',
-    dataPage: 'stock',
-    navId: 'navStock',
-    title: 'Saldos de Estoque | Bling ERP FLR',
-    category: 'Serviços & Operacional',
-    viewName: 'Saldos de Estoque',
-    btnLabel: 'Acerto de Estoque'
-  },
-  {
-    fileName: 'kits.html',
-    dataPage: 'kits',
-    navId: 'navKits',
-    title: 'Kits de Produtos | Bling ERP FLR',
-    category: 'Cadastros',
-    viewName: 'Kits de Produtos',
-    btnLabel: 'Novo Kit'
-  },
-  {
-    fileName: 'orcamentos.html',
-    dataPage: 'quotes',
-    navId: 'navQuotes',
-    title: 'Construtor de Orçamentos | Bling ERP FLR',
-    category: 'Vendas & Comercial',
-    viewName: 'Orçamentos',
-    btnLabel: 'Novo Orçamento'
   }
 ];
 

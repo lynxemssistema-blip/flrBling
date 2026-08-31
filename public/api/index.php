@@ -1500,6 +1500,184 @@ try {
         }
     }
 
+    // ==========================================================================
+    // PROJETOS / OBRAS & CONTROLE DE VERBAS (PHP Router)
+    // ==========================================================================
+    if ($segments[0] === 'projetos') {
+        $user = require_auth();
+
+        // Extrato de Material por Projeto
+        if (isset($segments[1]) && isset($segments[2]) && $segments[2] === 'extrato-material' && $method === 'GET') {
+            $projectId = $segments[1];
+            $projRes = supabase_fetch("flrBling_projects?id=eq." . urlencode($projectId), 'GET');
+            $project = !empty($projRes) ? $projRes[0] : null;
+            if (!$project) json_response(['error' => 'Projeto não encontrado.'], 404);
+
+            $itemsRes = supabase_fetch("flrBling_nfe_items?projeto_id=eq." . urlencode($projectId) . "&select=*,entry:flrBling_nfe_entries(*),produto:flrBling_products(*)", 'GET');
+            $movsRes = supabase_fetch("flrBling_stock_movements?projeto_id=eq." . urlencode($projectId) . "&select=*,produto:flrBling_products(*)", 'GET');
+
+            $items = is_array($itemsRes) ? $itemsRes : [];
+            $movs = is_array($movsRes) ? $movsRes : [];
+
+            $totalGasto = 0;
+            foreach ($items as $it) {
+                $totalGasto += floatval(isset($it['valor_total']) ? $it['valor_total'] : 0);
+            }
+
+            $verbaOrcada = floatval(isset($project['verba_material_orcada']) ? $project['verba_material_orcada'] : 0);
+            $saldoRestante = $verbaOrcada - $totalGasto;
+            $percentual = $verbaOrcada > 0 ? min(100, round(($totalGasto / $verbaOrcada) * 100, 2)) : 0;
+
+            json_response(['data' => [
+                'project' => $project,
+                'verbaOrcada' => $verbaOrcada,
+                'totalGastoMaterial' => $totalGasto,
+                'saldoVerbaRestante' => $saldoRestante,
+                'percentualConsumido' => $percentual,
+                'itensComprados' => $items,
+                'movimentacoesRetiradas' => $movs
+            ]]);
+        }
+
+        // Listar Projetos
+        if ($method === 'GET' && !isset($segments[1])) {
+            $status = isset($_GET['status']) ? $_GET['status'] : null;
+            $query = "flrBling_projects?select=*&order=created_at.desc";
+            if ($status) $query .= "&status=eq." . urlencode($status);
+            $res = supabase_fetch($query, 'GET');
+            json_response(['data' => is_array($res) ? $res : []]);
+        }
+
+        // Criar ou Atualizar Projeto
+        if ($method === 'POST') {
+            $body = get_json_input();
+            $id = isset($body['id']) ? $body['id'] : null;
+            if ($id) {
+                $res = supabase_fetch("flrBling_projects?id=eq." . urlencode($id), 'PATCH', $body);
+            } else {
+                $body['created_by'] = $user['id'];
+                $res = supabase_fetch("flrBling_projects", 'POST', $body);
+            }
+            json_response(['success' => true, 'data' => !empty($res) ? $res[0] : $body], 201);
+        }
+    }
+
+    // ==========================================================================
+    // PRODUTOS LOCAIS (PHP Router)
+    // ==========================================================================
+    if ($segments[0] === 'produtos-locais') {
+        $user = require_auth();
+
+        if ($method === 'GET') {
+            $res = supabase_fetch("flrBling_products?select=*&order=nome.asc", 'GET');
+            json_response(['data' => is_array($res) ? $res : []]);
+        }
+
+        if ($method === 'POST') {
+            $body = get_json_input();
+            $id = isset($body['id']) ? $body['id'] : null;
+            if ($id) {
+                $res = supabase_fetch("flrBling_products?id=eq." . urlencode($id), 'PATCH', $body);
+            } else {
+                $res = supabase_fetch("flrBling_products", 'POST', $body);
+            }
+            json_response(['success' => true, 'data' => !empty($res) ? $res[0] : $body], 201);
+        }
+    }
+
+    // ==========================================================================
+    // ENTRADA DE NOTAS FISCAIS (NF-e) & DE-PARA (PHP Router)
+    // ==========================================================================
+    if ($segments[0] === 'nfe-entradas') {
+        $user = require_auth();
+
+        // De-Para Lookup
+        if (isset($segments[1]) && $segments[1] === 'de-para-lookup' && $method === 'POST') {
+            $body = get_json_input();
+            $cnpj = isset($body['fornecedor_cnpj']) ? $body['fornecedor_cnpj'] : '';
+            $cod = isset($body['codigo_fornecedor']) ? $body['codigo_fornecedor'] : '';
+            $res = supabase_fetch("flrBling_de_para_rules?fornecedor_cnpj=eq." . urlencode($cnpj) . "&codigo_fornecedor=eq." . urlencode($cod) . "&select=*,produto:flrBling_products(*)", 'GET');
+            json_response(['data' => !empty($res) ? $res[0] : null]);
+        }
+
+        if ($method === 'GET') {
+            $res = supabase_fetch("flrBling_nfe_entries?select=*,itens:flrBling_nfe_items(*,produto:flrBling_products(*)),projeto:flrBling_projects(*)&order=data_emissao.desc", 'GET');
+            json_response(['data' => is_array($res) ? $res : []]);
+        }
+
+        if ($method === 'POST') {
+            $body = get_json_input();
+            $entry = isset($body['entry']) ? $body['entry'] : [];
+            $items = isset($body['items']) ? $body['items'] : [];
+
+            $entry['created_by'] = $user['id'];
+            $savedEntryRes = supabase_fetch("flrBling_nfe_entries", 'POST', $entry);
+            $savedEntry = !empty($savedEntryRes) ? $savedEntryRes[0] : $entry;
+            $entryId = isset($savedEntry['id']) ? $savedEntry['id'] : null;
+
+            if ($entryId && !empty($items)) {
+                foreach ($items as $it) {
+                    $prodId = isset($it['produto_id']) ? $it['produto_id'] : null;
+                    if (!$prodId && !empty($it['criar_novo_produto'])) {
+                        // Cria produto local
+                        $newProdRes = supabase_fetch("flrBling_products", 'POST', [
+                            'nome' => isset($it['descricao_fornecedor']) ? $it['descricao_fornecedor'] : 'Item NF-e',
+                            'codigo' => isset($it['codigo_fornecedor']) ? $it['codigo_fornecedor'] : null,
+                            'preco_custo' => floatval(isset($it['valor_unitario']) ? $it['valor_unitario'] : 0),
+                            'unidade' => isset($it['unidade_fornecedor']) ? $it['unidade_fornecedor'] : 'UN',
+                            'sincronizado_bling' => false
+                        ]);
+                        if (!empty($newProdRes)) $prodId = $newProdRes[0]['id'];
+                    }
+
+                    // Salva item vinculado
+                    supabase_fetch("flrBling_nfe_items", 'POST', [
+                        'nfe_entry_id' => $entryId,
+                        'produto_id' => $prodId,
+                        'codigo_fornecedor' => isset($it['codigo_fornecedor']) ? $it['codigo_fornecedor'] : null,
+                        'descricao_fornecedor' => isset($it['descricao_fornecedor']) ? $it['descricao_fornecedor'] : '',
+                        'quantidade' => floatval(isset($it['quantidade']) ? $it['quantidade'] : 1),
+                        'valor_unitario' => floatval(isset($it['valor_unitario']) ? $it['valor_unitario'] : 0),
+                        'valor_total' => floatval(isset($it['valor_total']) ? $it['valor_total'] : 0),
+                        'destino_estoque' => isset($it['destino_estoque']) ? $it['destino_estoque'] : 'flr',
+                        'projeto_id' => isset($it['projeto_id']) ? $it['projeto_id'] : (isset($entry['projeto_id']) ? $entry['projeto_id'] : null)
+                    ]);
+
+                    // Grava regra De-Para
+                    if (!empty($entry['fornecedor_cnpj']) && !empty($it['codigo_fornecedor']) && $prodId) {
+                        supabase_fetch("flrBling_de_para_rules", 'POST', [
+                            'fornecedor_cnpj' => $entry['fornecedor_cnpj'],
+                            'codigo_fornecedor' => $it['codigo_fornecedor'],
+                            'descricao_fornecedor' => isset($it['descricao_fornecedor']) ? $it['descricao_fornecedor'] : '',
+                            'produto_id' => $prodId
+                        ]);
+                    }
+                }
+            }
+
+            json_response(['success' => true, 'data' => $savedEntry], 201);
+        }
+    }
+
+    // ==========================================================================
+    // MOVIMENTAÇÕES DE ESTOQUE (PHP Router)
+    // ==========================================================================
+    if ($segments[0] === 'estoque' && isset($segments[1]) && $segments[1] === 'movimentacoes') {
+        $user = require_auth();
+
+        if ($method === 'GET') {
+            $res = supabase_fetch("flrBling_stock_movements?select=*,produto:flrBling_products(*),projeto:flrBling_projects(*)&order=data_movimento.desc", 'GET');
+            json_response(['data' => is_array($res) ? $res : []]);
+        }
+
+        if ($method === 'POST') {
+            $body = get_json_input();
+            $body['created_by'] = $user['id'];
+            $res = supabase_fetch("flrBling_stock_movements", 'POST', $body);
+            json_response(['success' => true, 'data' => !empty($res) ? $res[0] : $body], 201);
+        }
+    }
+
     // Rota não encontrada
     json_response(['error' => 'Endpoint da API não encontrado: ' . $path], 404);
 
