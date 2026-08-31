@@ -1208,10 +1208,6 @@ function generateRowHTML(mod, item) {
   const canEdit = hasPermission(mod, 'edit');
 
   if (mod === 'clients') {
-    const isPj = item.tipo === 'J';
-    const situacaoClass = item.situacao === 'A' ? 'active' : 'inactive';
-    const situacaoLabel = item.situacao === 'A' ? 'Ativo' : 'Inativo';
-  if (mod === 'clients') {
     const isPj = item.tipo === 'J' || item.tipoPessoa === 'J';
     const situacaoLabel = item.situacao === 'A' ? 'Ativo' : 'Inativo';
     const situacaoClass = item.situacao === 'A' ? 'active' : 'inactive';
